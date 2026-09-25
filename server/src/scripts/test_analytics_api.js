@@ -126,9 +126,9 @@ async function runAnalyticsApiVerificationSuite() {
     await client.query(`
       INSERT INTO public.study_sessions (user_id, subject_id, topic_id, started_at, ended_at, duration_minutes, status)
       VALUES 
-        ($1, $2, $3, now() - INTERVAL '2 days', now() - INTERVAL '2 days' + INTERVAL '60 minutes', 60, 'COMPLETED'),
-        ($1, $2, $3, now() - INTERVAL '1 day', now() - INTERVAL '1 day' + INTERVAL '90 minutes', 90, 'COMPLETED'),
-        ($1, $2, $3, now() - INTERVAL '3 hours', now() - INTERVAL '1 hour', 120, 'COMPLETED');
+        ($1, $2, $3, now()::date - INTERVAL '2 days' + TIME '10:00:00', now()::date - INTERVAL '2 days' + TIME '11:00:00', 60, 'COMPLETED'),
+        ($1, $2, $3, now()::date - INTERVAL '1 day' + TIME '10:00:00', now()::date - INTERVAL '1 day' + TIME '11:30:00', 90, 'COMPLETED'),
+        ($1, $2, $3, now()::date + TIME '10:00:00', now()::date + TIME '12:00:00', 120, 'COMPLETED');
     `, [userA, subjectId, topicId]);
 
     // Seed User A Study Plans
