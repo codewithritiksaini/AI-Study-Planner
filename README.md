@@ -103,14 +103,43 @@ Populate `server/.env`:
 PORT=5000
 NODE_ENV=development
 CLIENT_URL=http://localhost:5173
+DATABASE_URL=postgresql://postgres:[PASSWORD]@db.[PROJECT-REF].supabase.co:5432/postgres
 SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=your-supabase-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
 GEMINI_API_KEY=your-gemini-api-key
 ```
 
-> **Security Note:** Never commit `.env` files or secrets to source control. Client builds only receive `VITE_` public variables. `SUPABASE_SERVICE_ROLE_KEY` and `GEMINI_API_KEY` are strictly server-side.
+> **Security Note:** Never commit `.env` files or secrets to source control. Client builds only receive `VITE_` public variables. `DATABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` and `GEMINI_API_KEY` are strictly server-side.
 
-### 4. Running the Application
+### 4. Supabase Setup & Database Migrations
+
+1. **Create Supabase Project:**
+   - Go to [Supabase](https://supabase.com) and create a new project.
+   - Note your Project URL and database password.
+2. **Retrieve API Keys:**
+   - Go to **Project Settings ➔ API**.
+   - Copy `Project URL` to `SUPABASE_URL` and `VITE_SUPABASE_URL`.
+   - Copy `anon / public` key to `VITE_SUPABASE_ANON_KEY` and `server/.env`.
+   - Copy `service_role / secret` key to `SUPABASE_SERVICE_ROLE_KEY` in `server/.env`.
+3. **Database Connection String:**
+   - Under **Project Settings ➔ Database ➔ Connection parameters**, copy the URI.
+   - Percent-encode any special characters in the password.
+   - Set as `DATABASE_URL` in `server/.env`.
+4. **Execute Database Migrations:**
+   - Run the automated migration runner to apply `profiles` schema, triggers, and Row Level Security:
+   ```bash
+   cd server && npm run migrate
+   ```
+5. **Verify Row Level Security (RLS):**
+   - Run the automated multi-tenant RLS verification test suite:
+   ```bash
+   cd server && npm run test:rls
+   ```
+6. **Email Confirmation Handling:**
+   - If your Supabase Auth project has **Confirm email** enabled (Authentication ➔ Providers ➔ Email), new users will receive a verification link before establishing a session. The application gracefully supports both immediate-session configurations and email-confirmation workflows.
+
+### 5. Running the Application
 Start both frontend and backend concurrently from the root directory:
 ```bash
 npm run dev
@@ -125,7 +154,7 @@ npm run server
 npm run client
 ```
 
-### 5. Verifying Installation
+### 6. Verifying Installation
 * **Backend Healthcheck:** Open `http://localhost:5000/api/health` in your browser. Expected response:
   ```json
   {
@@ -134,15 +163,15 @@ npm run client
     "environment": "development"
   }
   ```
-* **Frontend Application:** Open `http://localhost:5173/` in your browser to view the AI Study Planner dashboard.
+* **Frontend Application:** Open `http://localhost:5173/` to view the landing page, register a student account at `/register`, or log in at `/login`.
 
 ---
 
 ## 🧭 Project Roadmap & Phases
 
 * [x] **Phase 0:** Complete Project Architecture & Technical Blueprint (`docs/PHASE_0_ARCHITECTURE_BLUEPRINT.md`)
-* [x] **Phase 1 (CURRENT):** Project Setup, Frontend Foundation & Backend Foundation
-* [ ] **Phase 2:** Authentication & Student Profile Management (Supabase Auth)
+* [x] **Phase 1:** Project Setup, Frontend Foundation & Backend Foundation
+* [x] **Phase 2 (COMPLETED):** Authentication & Student Profile Management (Supabase Auth & RLS)
 * [ ] **Phase 3:** Subjects & Syllabus Hierarchy Management
 * [ ] **Phase 4:** Focus Mode & Live Study Session Stopwatch
 * [ ] **Phase 5:** Deterministic Priority & Rule-Based Timetable Generator *(Core MVP)*

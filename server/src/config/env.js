@@ -11,6 +11,7 @@ const envSchema = z.object({
   CLIENT_URL: z.string().default('http://localhost:5173'),
   DATABASE_URL: z.string().optional().default(''),
   SUPABASE_URL: z.string().optional().default(''),
+  SUPABASE_ANON_KEY: z.string().optional().default(''),
   SUPABASE_SERVICE_ROLE_KEY: z.string().optional().default(''),
   GEMINI_API_KEY: z.string().optional().default('')
 });

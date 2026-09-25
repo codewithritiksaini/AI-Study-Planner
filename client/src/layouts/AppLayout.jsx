@@ -23,11 +23,11 @@ export const AppLayout = () => {
         <div className="fixed inset-0 z-40 md:hidden">
           {/* Backdrop */}
           <div
-            className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity"
+            className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity"
             onClick={() => setIsMobileSidebarOpen(false)}
           />
           {/* Drawer Content */}
-          <div className="relative flex flex-col w-64 h-full bg-slate-900 z-50">
+          <div className="relative flex flex-col w-64 h-full bg-white z-50 shadow-2xl">
             <Sidebar onClose={() => setIsMobileSidebarOpen(false)} />
           </div>
         </div>

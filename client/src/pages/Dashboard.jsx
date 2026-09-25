@@ -1,6 +1,7 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Timer, Calendar, BookOpen, AlertTriangle, Flame, Sparkles, ArrowRight, Play } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
+import { Timer, Calendar, BookOpen, AlertTriangle, Flame, Sparkles, Play, ArrowRight, UserCheck, AlertCircle } from 'lucide-react';
+import { useAuth } from '../context/AuthContext.jsx';
 import PageHeader from '../components/common/PageHeader.jsx';
 import Card, { CardHeader, CardTitle, CardContent } from '../components/common/Card.jsx';
 import Badge from '../components/common/Badge.jsx';
@@ -8,19 +9,46 @@ import Button from '../components/common/Button.jsx';
 
 export const Dashboard = () => {
   const navigate = useNavigate();
+  const { user, profile } = useAuth();
+
+  const studentName = profile?.full_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Student';
+  const isProfileComplete = profile && profile.full_name && profile.branch && profile.semester && profile.target_cgpa && profile.daily_available_hours;
 
   return (
     <div>
       <PageHeader
-        title="Dashboard"
+        title={`Welcome back, ${studentName} 👋`}
         subtitle="Track your daily study velocity, upcoming exam deadlines, and adaptive recommendations."
-        badge={<Badge variant="primary">Phase 1 Preview</Badge>}
+        badge={<Badge variant="primary">{profile?.branch ? `${profile.branch} • Sem ${profile.semester || 1}` : 'Phase 2 Active'}</Badge>}
         action={
           <Button icon={Play} onClick={() => navigate('/study')}>
             Start Studying
           </Button>
         }
       />
+
+      {/* Profile Completeness Alert Banner */}
+      {!isProfileComplete && (
+        <div className="mb-6 p-4 rounded-xl bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-amber-500/20 text-amber-600 flex items-center justify-center shrink-0">
+              <AlertCircle className="w-5 h-5" />
+            </div>
+            <div>
+              <h4 className="text-sm font-bold text-slate-800">Complete Your Academic Profile</h4>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Set your semester, available daily hours, and target CGPA to enable personalized study scheduling.
+              </p>
+            </div>
+          </div>
+          <Link to="/profile">
+            <Button size="sm" variant="primary" className="whitespace-nowrap font-medium">
+              Complete Profile
+              <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
+            </Button>
+          </Link>
+        </div>
+      )}
 
       {/* Metric Cards Row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -30,10 +58,12 @@ export const Dashboard = () => {
               <Timer className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-xs text-slate-500 font-medium">Today's Study Time</p>
+              <p className="text-xs text-slate-500 font-medium">Today's Target</p>
               <div className="flex items-baseline gap-1.5 mt-0.5">
-                <span className="text-xl font-bold text-slate-900">0h 45m</span>
-                <span className="text-[11px] text-slate-400">/ 3h 00m</span>
+                <span className="text-xl font-bold text-slate-900">
+                  {profile?.daily_available_hours ? `${profile.daily_available_hours}h` : '3.0h'}
+                </span>
+                <span className="text-[11px] text-slate-400">/ Day</span>
               </div>
             </div>
           </CardContent>
@@ -45,10 +75,12 @@ export const Dashboard = () => {
               <Calendar className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-xs text-slate-500 font-medium">Upcoming Exam</p>
+              <p className="text-xs text-slate-500 font-medium">Target CGPA</p>
               <div className="flex items-baseline gap-1.5 mt-0.5">
-                <span className="text-xl font-bold text-slate-900">12 Days</span>
-                <span className="text-[11px] text-emerald-600 font-medium">DBMS</span>
+                <span className="text-xl font-bold text-slate-900">
+                  {profile?.target_cgpa ? Number(profile.target_cgpa).toFixed(2) : '8.50'}
+                </span>
+                <span className="text-[11px] text-emerald-600 font-medium">Goal</span>
               </div>
             </div>
           </CardContent>
@@ -60,10 +92,12 @@ export const Dashboard = () => {
               <BookOpen className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-xs text-slate-500 font-medium">Syllabus Progress</p>
+              <p className="text-xs text-slate-500 font-medium">Current Semester</p>
               <div className="flex items-baseline gap-1.5 mt-0.5">
-                <span className="text-xl font-bold text-slate-900">62.5%</span>
-                <span className="text-[11px] text-purple-600 font-medium">Overall</span>
+                <span className="text-xl font-bold text-slate-900">
+                  {profile?.semester ? `Sem ${profile.semester}` : 'Sem 1'}
+                </span>
+                <span className="text-[11px] text-purple-600 font-medium">{profile?.branch || 'CSE'}</span>
               </div>
             </div>
           </CardContent>
@@ -77,7 +111,7 @@ export const Dashboard = () => {
             <div>
               <p className="text-xs text-slate-500 font-medium">Study Streak</p>
               <div className="flex items-baseline gap-1.5 mt-0.5">
-                <span className="text-xl font-bold text-slate-900">5 Days</span>
+                <span className="text-xl font-bold text-slate-900">1 Day</span>
                 <span className="text-[11px] text-amber-600 font-medium">🔥 Active</span>
               </div>
             </div>
@@ -153,7 +187,7 @@ export const Dashboard = () => {
             </CardHeader>
             <CardContent className="pt-0">
               <p className="text-xs text-slate-700 leading-relaxed font-medium">
-                "Based on your recent quiz scores, Normalization has a 40% accuracy rate with your DBMS exam in 12 days. An adaptive revision block is recommended."
+                "Profile linked successfully. Once you configure syllabus modules in Phase 3, adaptive revision blocks will populate automatically."
               </p>
               <div className="mt-3">
                 <Button size="sm" variant="outline" className="w-full text-xs" onClick={() => navigate('/ai-tutor')}>

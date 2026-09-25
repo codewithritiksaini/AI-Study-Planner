@@ -1,13 +1,14 @@
 import { Router } from 'express';
 import healthRoutes from './health.routes.js';
+import profileRoutes from './profile.routes.js';
 
 const router = Router();
 
 // Healthcheck route
 router.use('/health', healthRoutes);
 
-// Placeholder markers for future phases
-// router.use('/auth', authRoutes);        // Phase 2
+// Profile routes (Phase 2)
+router.use('/profile', profileRoutes);
 // router.use('/subjects', subjectRoutes); // Phase 3
 // router.use('/study', studyRoutes);       // Phase 4
 // router.use('/planner', plannerRoutes);   // Phase 5

@@ -31,10 +31,10 @@ export const navigationItems = [
 
 export const Sidebar = ({ onClose }) => {
   return (
-    <aside className="flex flex-col h-full bg-slate-900 text-slate-300 w-64 border-r border-slate-800 select-none">
+    <aside className="flex flex-col h-full bg-white text-slate-700 w-64 border-r border-slate-200 select-none">
       {/* Brand Header */}
-      <div className="flex items-center justify-between h-16 px-5 border-b border-slate-800">
-        <NavLink to="/dashboard" className="flex items-center gap-2.5 text-white font-bold text-base tracking-tight" onClick={onClose}>
+      <div className="flex items-center justify-between h-16 px-5 border-b border-slate-200">
+        <NavLink to="/dashboard" className="flex items-center gap-2.5 text-slate-900 font-bold text-base tracking-tight" onClick={onClose}>
           <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white shadow-sm">
             <GraduationCap className="w-5 h-5" />
           </div>
@@ -43,7 +43,7 @@ export const Sidebar = ({ onClose }) => {
         {onClose && (
           <button
             onClick={onClose}
-            className="md:hidden p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            className="md:hidden p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
             aria-label="Close menu"
           >
             <X className="w-5 h-5" />
@@ -64,10 +64,10 @@ export const Sidebar = ({ onClose }) => {
               to={item.path}
               onClick={onClose}
               className={({ isActive }) =>
-                `flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                `flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                   isActive
-                    ? 'bg-indigo-600 text-white shadow-sm'
-                    : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
+                    ? 'bg-indigo-50 text-indigo-700 font-semibold shadow-xs'
+                    : 'text-slate-600 hover:bg-slate-100/80 hover:text-slate-900'
                 }`
               }
             >
@@ -76,7 +76,7 @@ export const Sidebar = ({ onClose }) => {
                 <span>{item.label}</span>
               </div>
               {item.badge && (
-                <Badge variant="purple" size="sm" className="bg-purple-900/60 text-purple-300 border-purple-700/60 font-semibold text-[9px]">
+                <Badge variant="purple" size="sm" className="bg-purple-100 text-purple-700 border-purple-200 font-semibold text-[9px]">
                   {item.badge}
                 </Badge>
               )}
@@ -86,11 +86,11 @@ export const Sidebar = ({ onClose }) => {
       </nav>
 
       {/* Footer Info / Project Status */}
-      <div className="p-4 border-t border-slate-800 bg-slate-950/40">
+      <div className="p-4 border-t border-slate-200 bg-slate-50/80">
         <div className="flex items-center justify-between mb-1.5">
-          <span className="text-[11px] font-semibold text-slate-400">CSE Capstone</span>
-          <Badge variant="primary" size="sm" className="bg-indigo-950 text-indigo-400 border-indigo-800/70 text-[10px]">
-            Phase 1
+          <span className="text-[11px] font-semibold text-slate-600">CSE Capstone</span>
+          <Badge variant="primary" size="sm" className="bg-indigo-50 text-indigo-700 border-indigo-200 text-[10px]">
+            Phase 2
           </Badge>
         </div>
         <p className="text-[11px] text-slate-400 leading-tight">

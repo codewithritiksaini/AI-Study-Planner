@@ -1,7 +1,11 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext.jsx';
+import ProtectedRoute from './components/common/ProtectedRoute.jsx';
 import AppLayout from './layouts/AppLayout.jsx';
 import LandingPage from './pages/LandingPage.jsx';
+import Login from './pages/Login.jsx';
+import Register from './pages/Register.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import Planner from './pages/Planner.jsx';
 import Subjects from './pages/Subjects.jsx';
@@ -17,25 +21,37 @@ import NotFound from './pages/NotFound.jsx';
 export function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        {/* Public Root Landing Page */}
-        <Route path="/" element={<LandingPage />} />
+      <AuthProvider>
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
 
-        {/* Main Application Shell with Shared Sidebar & Header */}
-        <Route element={<AppLayout />}>
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/planner" element={<Planner />} />
-          <Route path="/subjects" element={<Subjects />} />
-          <Route path="/study" element={<Study />} />
-          <Route path="/quiz" element={<Quiz />} />
-          <Route path="/progress" element={<Progress />} />
-          <Route path="/analytics" element={<Analytics />} />
-          <Route path="/ai-tutor" element={<AITutor />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/settings" element={<Settings />} />
+          {/* Protected Application Routes (Requires Verified Student Session) */}
+          <Route
+            element={
+              <ProtectedRoute>
+                <AppLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/planner" element={<Planner />} />
+            <Route path="/subjects" element={<Subjects />} />
+            <Route path="/study" element={<Study />} />
+            <Route path="/quiz" element={<Quiz />} />
+            <Route path="/progress" element={<Progress />} />
+            <Route path="/analytics" element={<Analytics />} />
+            <Route path="/ai-tutor" element={<AITutor />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/settings" element={<Settings />} />
+          </Route>
+
+          {/* 404 Catch-All Page */}
           <Route path="*" element={<NotFound />} />
-        </Route>
-      </Routes>
+        </Routes>
+      </AuthProvider>
     </BrowserRouter>
   );
 }
