@@ -13,7 +13,7 @@ export const envSchema = z.object({
   SUPABASE_ANON_KEY: z.string().optional().default(''),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1, 'SUPABASE_SERVICE_ROLE_KEY is required'),
   GEMINI_API_KEY: z.string().min(1, 'GEMINI_API_KEY is required'),
-  GEMINI_MODEL: z.string().default('gemini-1.5-flash')
+  GEMINI_MODEL: z.string().default('gemini-3.8-flash')
 });
 
 /**

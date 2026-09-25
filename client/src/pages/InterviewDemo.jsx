@@ -599,7 +599,7 @@ export default function InterviewDemo() {
                 <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">Layer 3: Analytics & Sched</span>
                 <Badge variant="neutral" size="sm">Deterministic</Badge>
               </div>
-              <h4 className="text-sm font-bold text-slate-900">Interval Scheduler (Phase 11)</h4>
+              <h4 className="text-sm font-bold text-slate-900">Interval Constraint Scheduler</h4>
               <p className="text-xs text-slate-600 mt-1 leading-relaxed">
                 Pure interval subtraction arithmetic: <code className="text-indigo-600 font-mono text-[10px]">Free = Avail \ (Blocked ∪ Locked)</code>.
                 Non-destructive preview before commit.
@@ -686,7 +686,7 @@ export default function InterviewDemo() {
         {/* Step Progression Ribbon */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 mb-8">
           {[
-            { num: 1, label: 'Recommendations', sub: 'Phase 10 Engine' },
+            { num: 1, label: 'Recommendations', sub: 'Multi-Factor' },
             { num: 2, label: 'Schedule Preview', sub: 'Non-Destructive' },
             { num: 3, label: 'Apply Timetable', sub: 'Persist Slots' },
             { num: 4, label: 'Adaptive Resched', sub: 'Missed Session' },
@@ -734,7 +734,7 @@ export default function InterviewDemo() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-base font-bold text-slate-900">Step 1: Multi-Factor Recommendation Ingestion (Phase 10)</h3>
+                  <h3 className="text-base font-bold text-slate-900">Step 1: Multi-Factor Recommendation Ingestion</h3>
                   <p className="text-xs text-slate-600 mt-0.5">
                     Evaluates exam countdowns, DAG prerequisites, and weak quiz scores to prioritize high-yield topics.
                   </p>
@@ -765,7 +765,7 @@ export default function InterviewDemo() {
                 </div>
               ) : (
                 <div className="p-6 text-center rounded-xl bg-white border border-slate-200 text-slate-500 text-xs">
-                  Click the button above to run Phase 10 recommendation prioritization.
+                  Click the button above to run recommendation prioritization.
                 </div>
               )}
             </div>

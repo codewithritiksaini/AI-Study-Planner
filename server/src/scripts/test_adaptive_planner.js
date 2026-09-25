@@ -349,6 +349,7 @@ async function runAdaptivePlannerVerificationSuite() {
     await clientA.end();
     await clientB.end();
   }
+  process.exit(0);
 }
 
 runAdaptivePlannerVerificationSuite().catch(err => {

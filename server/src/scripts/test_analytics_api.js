@@ -407,6 +407,7 @@ async function runAnalyticsApiVerificationSuite() {
     }
     await client.end();
   }
+  process.exit(0);
 }
 
 runAnalyticsApiVerificationSuite().catch((err) => {

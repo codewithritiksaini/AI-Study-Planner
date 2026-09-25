@@ -24,6 +24,9 @@ async function runRescheduleTest() {
     const subjectId = subjectRes.rows[0].id;
     const topicId = topicRes.rows[0].id;
 
+    // Clean up previous test generated plans for this test runner to ensure open slot availability
+    await query(`DELETE FROM public.study_plans WHERE user_id = $1 AND plan_date >= CURRENT_DATE;`, [userId]);
+
     // 2. Create a test session for today
     const testSessionRes = await query(`
       INSERT INTO public.study_plans (

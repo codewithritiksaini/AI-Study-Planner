@@ -6,8 +6,8 @@ import { env } from './env.js';
  */
 export const AI_CONFIG = {
   // Model selection
-  model: env.GEMINI_MODEL || 'gemini-3.5-flash-lite',
-  fallbackModels: ['gemini-3.5-flash-lite', 'gemini-3.5-flash', 'gemini-3.8-flash'],
+  model: env.GEMINI_MODEL || 'gemini-3.8-flash',
+  fallbackModels: ['gemini-3.8-flash', 'gemini-2.5-pro'],
 
   // Network & execution limits
   timeoutMs: 30000,
