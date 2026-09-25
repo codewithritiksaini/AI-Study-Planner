@@ -1,0 +1,27 @@
+{
+  "name": "ai-study-planner",
+  "version": "1.0.0",
+  "description": "AI-Powered Adaptive Study Planning Web Application for B.Tech CSE Students",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently -n \"SERVER,CLIENT\" -c \"blue,cyan\" \"npm run server\" \"npm run client\"",
+    "client": "npm run dev --prefix client",
+    "server": "npm run dev --prefix server",
+    "build": "npm run build --prefix client",
+    "install:all": "npm install && npm install --prefix server && npm install --prefix client"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  },
+  "keywords": [
+    "ai-study-planner",
+    "react",
+    "vite",
+    "express",
+    "supabase",
+    "gemini-ai",
+    "adaptive-learning"
+  ],
+  "author": "B.Tech CSE Project Team",
+  "license": "MIT"
+}
