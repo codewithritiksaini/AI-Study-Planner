@@ -8,6 +8,7 @@ import plannerRoutes from './planner.routes.js';
 import aiRoutes from './ai.routes.js';
 import quizRoutes from './quiz.routes.js';
 import performanceRoutes from './performance.routes.js';
+import analyticsRoutes from './analytics.routes.js';
 
 const router = Router();
 
@@ -36,6 +37,7 @@ router.use('/quizzes', quizRoutes);
 // Topic Performance & Mastery Detection (Phase 7)
 router.use('/performance', performanceRoutes);
 
-// router.use('/analytics', analyticsRoutes);// Phase 9
+// Student Intelligence & Analytics (Phase 9)
+router.use('/analytics', analyticsRoutes);
 
 export default router;

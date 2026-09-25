@@ -18,7 +18,11 @@
     "test:quiz": "npm run test:quiz:eval && npm run test:perf",
     "test:priority:adaptive": "node src/scripts/test_priority_adaptive.js",
     "test:adaptive": "node src/scripts/test_adaptive_planner.js",
-    "test:adaptive:api": "node src/scripts/test_adaptive_api.js"
+    "test:adaptive:api": "node src/scripts/test_adaptive_api.js",
+    "test:analytics:metrics": "node src/scripts/test_analytics_metrics.js",
+    "test:analytics:insights": "node src/scripts/test_analytics_insights.js",
+    "test:analytics:api": "node src/scripts/test_analytics_api.js",
+    "test:analytics": "npm run test:analytics:metrics && npm run test:analytics:insights && npm run test:analytics:api"
   },
   "dependencies": {
     "@google/genai": "^2.24.0",

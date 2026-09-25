@@ -8,6 +8,7 @@ import {
   calculateAvailableMinutes,
   validateSchedule
 } from './scheduling.service.js';
+import { getLocalDateString } from './metrics/index.js';
 
 export class AdaptivePlannerService {
   /**
@@ -163,10 +164,12 @@ export class AdaptivePlannerService {
       };
     }
 
-    // Group actual duration by calendar day
+    const timezone = profile?.timezone || 'UTC';
+
+    // Group actual duration by calendar day using timezone-aware local date
     const dayTotals = new Map();
     recentSessions.forEach(s => {
-      const day = new Date(s.started_at).toISOString().split('T')[0];
+      const day = getLocalDateString(s.started_at, timezone);
       const mins = Number(s.duration_minutes) || 0;
       dayTotals.set(day, (dayTotals.get(day) || 0) + mins);
     });

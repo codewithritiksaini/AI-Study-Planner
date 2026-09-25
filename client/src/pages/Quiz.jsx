@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { 
   Brain, 
   Sparkles, 
@@ -7,7 +7,8 @@ import {
   HelpCircle, 
   CheckCircle2, 
   BookOpen, 
-  AlertCircle 
+  AlertCircle,
+  BarChart3
 } from 'lucide-react';
 import PageHeader from '../components/common/PageHeader.jsx';
 import Badge from '../components/common/Badge.jsx';
@@ -19,6 +20,7 @@ import QuizHistoryTable from '../components/quiz/QuizHistoryTable.jsx';
 import quizService from '../services/quizzes.js';
 
 export const Quiz = () => {
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const preselectedSubjectId = searchParams.get('subjectId');
   const preselectedTopicId = searchParams.get('topicId');
@@ -185,6 +187,14 @@ export const Quiz = () => {
           >
             <History className="w-4 h-4" />
             Quiz History
+          </button>
+
+          <button
+            onClick={() => navigate('/analytics')}
+            className="flex items-center gap-2 py-3 px-4 font-semibold text-xs border-b-2 border-transparent text-slate-500 hover:text-indigo-600 transition-colors"
+          >
+            <BarChart3 className="w-4 h-4" />
+            Mastery Analytics
           </button>
         </div>
       )}

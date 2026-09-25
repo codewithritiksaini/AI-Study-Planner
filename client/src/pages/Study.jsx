@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
+import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import {
   Play,
   Clock,
@@ -12,7 +12,8 @@ import {
   Layers,
   ChevronRight,
   Flame,
-  ArrowRight
+  ArrowRight,
+  BarChart3
 } from 'lucide-react';
 import { studyService } from '../services/study.js';
 import { subjectService } from '../services/subjects.js';
@@ -28,6 +29,7 @@ import SessionHistoryTable from '../components/study/SessionHistoryTable.jsx';
 import DeleteConfirmModal from '../components/common/DeleteConfirmModal.jsx';
 
 export const Study = () => {
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const initialSubjectId = searchParams.get('subjectId') || '';
   const initialTopicId = searchParams.get('topicId') || '';
@@ -424,6 +426,17 @@ export const Study = () => {
                     Sessions persist safely across browser reloads or tab closures.
                   </p>
                 </div>
+
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="w-full text-xs"
+                  onClick={() => navigate('/analytics')}
+                  icon={BarChart3}
+                >
+                  View Full Analytics & Trends
+                  <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
+                </Button>
               </CardContent>
             </Card>
           </div>

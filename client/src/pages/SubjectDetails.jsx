@@ -11,7 +11,8 @@ import {
   Clock,
   CheckCircle2,
   ListFilter,
-  Brain
+  Brain,
+  BarChart3
 } from 'lucide-react';
 import { subjectService } from '../services/subjects.js';
 import { topicService } from '../services/topics.js';
@@ -334,6 +335,15 @@ export const SubjectDetails = () => {
               className="text-indigo-700 border-indigo-200 hover:bg-indigo-50"
             >
               Practice Quiz
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              icon={BarChart3}
+              onClick={() => navigate('/analytics')}
+              className="text-slate-700 hover:text-indigo-600 hover:border-indigo-200"
+            >
+              Analytics
             </Button>
             <Button
               variant="outline"

@@ -16,7 +16,8 @@ import {
   Clock,
   Plus,
   CheckCircle2,
-  Brain
+  Brain,
+  BarChart3
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { subjectService } from '../services/subjects.js';
@@ -25,6 +26,7 @@ import { plannerService } from '../services/planner.js';
 import { aiService } from '../services/ai.js';
 import performanceService from '../services/performance.js';
 import quizService from '../services/quizzes.js';
+import analyticsService from '../services/analytics.js';
 import PageHeader from '../components/common/PageHeader.jsx';
 import Card, { CardHeader, CardTitle, CardContent } from '../components/common/Card.jsx';
 import Badge from '../components/common/Badge.jsx';
@@ -72,6 +74,9 @@ export const Dashboard = () => {
     assessedTopicsCount: 0
   });
 
+  // Phase 9 Student Intelligence & Analytics
+  const [analyticsOverview, setAnalyticsOverview] = useState(null);
+
   const fetchAIAdvice = async () => {
     try {
       setLoadingAiAdvice(true);
@@ -90,13 +95,14 @@ export const Dashboard = () => {
     const loadDashboardData = async () => {
       try {
         setLoadingSummary(true);
-        const [academicSummary, activeSess, todayData, planData, perfs, history] = await Promise.all([
+        const [academicSummary, activeSess, todayData, planData, perfs, history, overviewData] = await Promise.all([
           subjectService.getDashboardSummary(),
           studyService.getActiveSession().catch(() => null),
           studyService.getTodaySessions().catch(() => ({ total_minutes: 0, session_count: 0, sessions: [] })),
           plannerService.getAdaptiveToday().catch(() => plannerService.getTodayPlan().catch(() => ({ total_planned_minutes: 0, completed_minutes: 0, pending_minutes: 0, tasks: [], plans: [] }))),
           performanceService.getAllTopicPerformance().catch(() => []),
-          quizService.getQuizHistory(10).catch(() => [])
+          quizService.getQuizHistory(10).catch(() => []),
+          analyticsService.getOverview(7).catch(() => null)
         ]);
 
         if (isMounted) {
@@ -104,6 +110,7 @@ export const Dashboard = () => {
           if (activeSess) setActiveSession(activeSess);
           if (todayData) setTodayStudy(todayData);
           if (planData) setTodayPlan(planData);
+          if (overviewData) setAnalyticsOverview(overviewData);
           
           if (perfs) {
             const avg = perfs.length > 0
@@ -601,6 +608,68 @@ export const Dashboard = () => {
 
           {/* Weak Topics Card (Phase 7 Real Topic Performance) */}
           <WeakTopicsCard limit={3} />
+
+          {/* Student Intelligence & Analytics Preview Card (Phase 9) */}
+          <Card className="border-slate-200 bg-white shadow-xs">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                    <BarChart3 className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-xs font-bold text-slate-900">Study Intelligence</CardTitle>
+                    <p className="text-[11px] text-slate-500">7-day performance snapshot</p>
+                  </div>
+                </div>
+                <Badge variant="primary" size="sm">Phase 9</Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-2 space-y-3">
+              <div className="grid grid-cols-3 gap-2 text-center">
+                <div className="p-2 bg-slate-50 rounded-lg border border-slate-100">
+                  <p className="text-[10px] text-slate-500 font-medium uppercase">Streak</p>
+                  <p className="text-sm font-bold text-indigo-600">
+                    {analyticsOverview?.study?.current_streak ?? 0}d 🔥
+                  </p>
+                </div>
+                <div className="p-2 bg-slate-50 rounded-lg border border-slate-100">
+                  <p className="text-[10px] text-slate-500 font-medium uppercase">Consistency</p>
+                  <p className="text-sm font-bold text-emerald-600">
+                    {analyticsOverview?.study?.consistency_percentage ?? 0}%
+                  </p>
+                </div>
+                <div className="p-2 bg-slate-50 rounded-lg border border-slate-100">
+                  <p className="text-[10px] text-slate-500 font-medium uppercase">Adherence</p>
+                  <p className="text-sm font-bold text-slate-800">
+                    {analyticsOverview?.planner?.adherence_percentage ?? 0}%
+                  </p>
+                </div>
+              </div>
+
+              {analyticsOverview?.insights && analyticsOverview.insights.length > 0 && (
+                <div className="p-2.5 rounded-lg bg-indigo-50/50 border border-indigo-100 text-xs">
+                  <div className="flex items-center gap-1.5 font-bold text-slate-900 mb-0.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-600" />
+                    <span className="truncate">{analyticsOverview.insights[0].title}</span>
+                  </div>
+                  <p className="text-[11px] text-slate-600 line-clamp-2">
+                    {analyticsOverview.insights[0].action || analyticsOverview.insights[0].message}
+                  </p>
+                </div>
+              )}
+
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-full text-xs"
+                onClick={() => navigate('/analytics')}
+              >
+                View Full Analytics & Insights
+                <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
+              </Button>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
