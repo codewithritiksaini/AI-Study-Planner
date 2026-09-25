@@ -86,6 +86,136 @@ export const plannerService = {
   },
 
   // ============================================================================
+  // PHASE 11: INTELLIGENT ADAPTIVE STUDY SCHEDULING API
+  // ============================================================================
+
+  /**
+   * Retrieves daily timeline schedule with time slots, capacity calculation,
+   * overload indicators, and explainability bullets.
+   */
+  async getDailySchedule({ date = null } = {}) {
+    const params = {};
+    if (date) params.date = date;
+    const response = await api.get('/planner/daily', { params });
+    return response.data?.data || null;
+  },
+
+  /**
+   * Retrieves multi-day weekly timetable with day-by-day session distribution.
+   */
+  async getWeeklyTimetable({ startDate = null } = {}) {
+    const params = {};
+    if (startDate) params.start_date = startDate;
+    const response = await api.get('/planner/weekly', { params });
+    return response.data?.data || null;
+  },
+
+  /**
+   * Retrieves recurring weekly study availability windows.
+   */
+  async getAvailability() {
+    const response = await api.get('/planner/availability');
+    return response.data?.data?.availability || [];
+  },
+
+  /**
+   * Creates a recurring weekly study availability window.
+   */
+  async createAvailability(payload) {
+    const response = await api.post('/planner/availability', payload);
+    return response.data?.data?.availability || null;
+  },
+
+  /**
+   * Updates an existing availability window.
+   */
+  async updateAvailability(id, payload) {
+    const response = await api.put(`/planner/availability/${id}`, payload);
+    return response.data?.data?.availability || null;
+  },
+
+  /**
+   * Deletes an availability window.
+   */
+  async deleteAvailability(id) {
+    const response = await api.delete(`/planner/availability/${id}`);
+    return response.data?.data || null;
+  },
+
+  /**
+   * Retrieves student's blocked periods.
+   */
+  async getBlockedPeriods() {
+    const response = await api.get('/planner/blocked-periods');
+    return response.data?.data?.blocked_periods || [];
+  },
+
+  /**
+   * Creates a blocked time period (recurring or specific date).
+   */
+  async createBlockedPeriod(payload) {
+    const response = await api.post('/planner/blocked-periods', payload);
+    return response.data?.data?.blocked_period || null;
+  },
+
+  /**
+   * Deletes a blocked period.
+   */
+  async deleteBlockedPeriod(id) {
+    const response = await api.delete(`/planner/blocked-periods/${id}`);
+    return response.data?.data || null;
+  },
+
+  /**
+   * Generates a non-destructive plan preview with candidate sessions,
+   * overload calculations, and unscheduled task breakdown.
+   */
+  async generatePreview(payload = {}) {
+    const response = await api.post('/planner/preview', payload);
+    return response.data?.data || null;
+  },
+
+  /**
+   * Persists a previewed plan into active schedule, preserving locked sessions.
+   */
+  async applyPlan(payload) {
+    const response = await api.post('/planner/apply', payload);
+    return response.data?.data || null;
+  },
+
+  /**
+   * Toggles lock on an individual session.
+   */
+  async toggleLock(sessionId) {
+    const response = await api.post(`/planner/sessions/${sessionId}/lock`);
+    return response.data?.data || null;
+  },
+
+  /**
+   * Targeted reschedule for a missed study session.
+   */
+  async rescheduleSession(sessionId) {
+    const response = await api.post(`/planner/sessions/${sessionId}/reschedule`);
+    return response.data?.data || null;
+  },
+
+  /**
+   * Creates a manual custom study session.
+   */
+  async createManualSession(payload) {
+    const response = await api.post('/planner/sessions', payload);
+    return response.data?.data?.session || null;
+  },
+
+  /**
+   * Deletes a study session.
+   */
+  async deleteSession(sessionId) {
+    const response = await api.delete(`/planner/sessions/${sessionId}`);
+    return response.data?.data || null;
+  },
+
+  // ============================================================================
   // SHARED & BACKWARD-COMPATIBLE ENDPOINTS
   // ============================================================================
 

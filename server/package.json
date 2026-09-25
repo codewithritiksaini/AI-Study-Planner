@@ -30,7 +30,15 @@
     "test:rec:lifecycle": "node src/scripts/test_recommendation_lifecycle.js",
     "test:rec:fallback": "node src/scripts/test_recommendation_gemini_fallback.js",
     "test:rec:api": "node src/scripts/test_recommendation_api.js",
-    "test:rec": "npm run test:rec:context && npm run test:rec:rules && npm run test:rec:priority && npm run test:rec:lifecycle && npm run test:rec:fallback && npm run test:rec:api"
+    "test:rec": "npm run test:rec:context && npm run test:rec:rules && npm run test:rec:priority && npm run test:rec:lifecycle && npm run test:rec:fallback && npm run test:rec:api",
+    "test:rls:phase11": "node src/scripts/test_rls_phase11.js",
+    "test:sched:context": "node src/scripts/test_scheduling_context.js",
+    "test:sched:slots": "node src/scripts/test_scheduling_slots.js",
+    "test:sched:engine": "node src/scripts/test_scheduling_engine.js",
+    "test:sched:reschedule": "node src/scripts/test_scheduling_reschedule.js",
+    "test:sched:fallback": "node src/scripts/test_scheduling_fallback.js",
+    "test:sched:api": "node src/scripts/test_scheduling_api.js",
+    "test:sched": "npm run test:rls:phase11 && npm run test:sched:context && npm run test:sched:slots && npm run test:sched:engine && npm run test:sched:reschedule && npm run test:sched:fallback && npm run test:sched:api"
   },
   "dependencies": {
     "@google/genai": "^2.24.0",

@@ -15,11 +15,42 @@ import {
   explainAdaptivePlan,
   updatePlanStatus as updateAdaptivePlanStatus
 } from '../controllers/adaptive-planner.controller.js';
+import * as schedulerController from '../controllers/scheduler.controller.js';
 
 const router = Router();
 
 // All planner endpoints require Supabase Auth authentication
 router.use(requireAuth);
+
+// ==============================================================================
+// PHASE 11: INTELLIGENT ADAPTIVE STUDY SCHEDULING ENDPOINTS
+// ==============================================================================
+// Daily & Weekly views
+router.get('/daily', schedulerController.getDailyPlan);
+router.get('/weekly', schedulerController.getWeeklyPlan);
+
+// Weekly Availability
+router.get('/availability', schedulerController.getAvailability);
+router.post('/availability', schedulerController.createAvailability);
+router.put('/availability/:id', schedulerController.updateAvailability);
+router.delete('/availability/:id', schedulerController.deleteAvailability);
+
+// Blocked Periods
+router.get('/blocked-periods', schedulerController.getBlockedPeriods);
+router.post('/blocked-periods', schedulerController.createBlockedPeriod);
+router.delete('/blocked-periods/:id', schedulerController.deleteBlockedPeriod);
+
+// Smart Plan Generation & Transactional Apply
+router.post('/preview', schedulerController.generatePlanPreview);
+router.post('/apply', schedulerController.applyPlan);
+
+// Session Lock & Missed Session Reschedule
+router.post('/sessions/:id/lock', schedulerController.toggleSessionLock);
+router.post('/sessions/:id/reschedule', schedulerController.handleRescheduleSession);
+
+// Manual Sessions
+router.post('/sessions', schedulerController.createManualSession);
+router.delete('/sessions/:id', schedulerController.deleteSession);
 
 // ==============================================================================
 // PHASE 8: ADAPTIVE STUDY PLANNER ENDPOINTS

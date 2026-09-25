@@ -48,7 +48,8 @@ async function runMigrations() {
       WHERE table_schema = 'public' AND table_name IN (
         'profiles', 'subjects', 'topics', 'study_sessions', 'study_plans',
         'quizzes', 'quiz_questions', 'quiz_attempts', 'quiz_answers', 'topic_performance',
-        'recommendations', 'recommendation_feedback'
+        'recommendations', 'recommendation_feedback',
+        'study_availability', 'blocked_periods', 'plan_generations', 'topic_prerequisites'
       )
       ORDER BY table_name;
     `);
