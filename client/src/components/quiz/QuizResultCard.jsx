@@ -36,6 +36,8 @@ export const QuizResultCard = ({
   const [loadingAi, setLoadingAi] = useState({});
   const [errorAi, setErrorAi] = useState({});
 
+  const [filter, setFilter] = useState('ALL'); // 'ALL' | 'INCORRECT' | 'CORRECT'
+
   if (!result) return null;
 
   const {
@@ -114,7 +116,7 @@ export const QuizResultCard = ({
         color: 'text-amber-700',
         bg: 'bg-amber-50',
         border: 'border-amber-200',
-        message: 'Needs Practice. Review the incorrect answers and try again.'
+        message: 'Needs Practice. Review the incorrect answers below.'
       };
     }
     return {
@@ -128,6 +130,12 @@ export const QuizResultCard = ({
 
   const theme = getScoreTheme(percentage);
 
+  const filteredReview = review.filter(q => {
+    if (filter === 'INCORRECT') return q.is_correct !== true;
+    if (filter === 'CORRECT') return q.is_correct === true;
+    return true;
+  });
+
   return (
     <div className={`space-y-6 ${className}`}>
       {/* 1. Score Summary Hero Card */}
@@ -136,8 +144,8 @@ export const QuizResultCard = ({
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="text-center md:text-left space-y-2">
               <div className="flex items-center justify-center md:justify-start gap-2">
-                <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  Quiz Completed
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  Assessment Performance Report
                 </span>
                 {performance?.level ? (
                   <PerformanceBadge level={performance.level} size="sm" />
@@ -146,11 +154,17 @@ export const QuizResultCard = ({
                 )}
               </div>
               <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-                {quiz?.title || result?.quiz_title || 'Assessment Results'}
+                {quiz?.title || result?.quiz_title || 'Topic Assessment Report'}
               </h1>
               <p className={`text-sm font-medium ${theme.color}`}>
                 {theme.message}
               </p>
+
+              {/* Saved to database confirmation */}
+              <div className="inline-flex items-center gap-2 text-xs font-semibold text-emerald-800 bg-emerald-100/90 border border-emerald-300 px-3 py-1 rounded-full mt-1.5 shadow-2xs">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Saved to Quiz History — You can revisit this report anytime</span>
+              </div>
             </div>
 
             {/* Score Radial / Metric Circle */}
@@ -170,44 +184,44 @@ export const QuizResultCard = ({
         {/* Detailed KPI counters */}
         <CardContent className="p-4 sm:p-6 bg-white">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center gap-3">
+            <div className="p-3.5 rounded-xl bg-emerald-50/80 border border-emerald-200 flex items-center gap-3">
               <div className="w-9 h-9 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
                 <CheckCircle2 className="w-5 h-5" />
               </div>
               <div>
-                <p className="text-[11px] font-medium text-slate-500 uppercase">Correct</p>
-                <p className="text-lg font-bold text-slate-900">{correct_count}</p>
+                <p className="text-[11px] font-bold text-emerald-800 uppercase">Sahi (Correct)</p>
+                <p className="text-xl font-extrabold text-emerald-900">{correct_count} <span className="text-xs font-medium text-emerald-700">/ {review.length}</span></p>
               </div>
             </div>
 
-            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center gap-3">
+            <div className="p-3.5 rounded-xl bg-rose-50/80 border border-rose-200 flex items-center gap-3">
               <div className="w-9 h-9 rounded-lg bg-rose-100 text-rose-700 flex items-center justify-center shrink-0">
                 <XCircle className="w-5 h-5" />
               </div>
               <div>
-                <p className="text-[11px] font-medium text-slate-500 uppercase">Incorrect</p>
-                <p className="text-lg font-bold text-slate-900">{incorrect_count}</p>
+                <p className="text-[11px] font-bold text-rose-800 uppercase">Galat (Incorrect)</p>
+                <p className="text-xl font-extrabold text-rose-900">{incorrect_count} <span className="text-xs font-medium text-rose-700">/ {review.length}</span></p>
               </div>
             </div>
 
-            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center gap-3">
+            <div className="p-3.5 rounded-xl bg-amber-50/80 border border-amber-200 flex items-center gap-3">
               <div className="w-9 h-9 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
                 <HelpCircle className="w-5 h-5" />
               </div>
               <div>
-                <p className="text-[11px] font-medium text-slate-500 uppercase">Unanswered</p>
-                <p className="text-lg font-bold text-slate-900">{unanswered_count}</p>
+                <p className="text-[11px] font-bold text-amber-800 uppercase">Unanswered</p>
+                <p className="text-xl font-extrabold text-amber-900">{unanswered_count}</p>
               </div>
             </div>
 
-            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center gap-3">
+            <div className="p-3.5 rounded-xl bg-indigo-50/80 border border-indigo-200 flex items-center gap-3">
               <div className="w-9 h-9 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0">
                 <Award className="w-5 h-5" />
               </div>
               <div>
-                <p className="text-[11px] font-medium text-slate-500 uppercase">Attempts</p>
-                <p className="text-lg font-bold text-slate-900">
-                  {performance?.attempt_count || 1}
+                <p className="text-[11px] font-bold text-indigo-800 uppercase">Total Score</p>
+                <p className="text-xl font-extrabold text-indigo-900">
+                  {score} <span className="text-xs font-medium text-indigo-700">pts ({Math.round(percentage)}%)</span>
                 </p>
               </div>
             </div>
@@ -261,16 +275,55 @@ export const QuizResultCard = ({
 
       {/* 2. Question-by-Question Review Breakdown */}
       <div className="space-y-4">
-        <div className="flex items-center justify-between px-1">
-          <h2 className="text-base font-bold text-slate-900">
-            Review Questions ({review.length})
-          </h2>
-          <span className="text-xs text-slate-500">
-            Click any question to view in-depth AI explanations
-          </span>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-1">
+          <div>
+            <h2 className="text-base font-bold text-slate-900">
+              Detailed Question Report ({filteredReview.length})
+            </h2>
+            <p className="text-xs text-slate-500">
+              Examine each question, verify your choices, and study the exact conceptual explanations.
+            </p>
+          </div>
+
+          {/* Quick Filter Buttons */}
+          <div className="flex items-center gap-1.5 self-start sm:self-auto bg-slate-100 p-1 rounded-xl">
+            <button
+              type="button"
+              onClick={() => setFilter('ALL')}
+              className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                filter === 'ALL'
+                  ? 'bg-white text-slate-900 shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              All ({review.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilter('INCORRECT')}
+              className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                filter === 'INCORRECT'
+                  ? 'bg-rose-600 text-white shadow-xs'
+                  : 'text-rose-700 hover:bg-rose-50'
+              }`}
+            >
+              ✗ Incorrect ({incorrect_count})
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilter('CORRECT')}
+              className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                filter === 'CORRECT'
+                  ? 'bg-emerald-600 text-white shadow-xs'
+                  : 'text-emerald-700 hover:bg-emerald-50'
+              }`}
+            >
+              ✓ Correct ({correct_count})
+            </button>
+          </div>
         </div>
 
-        {review.map((q, idx) => {
+        {filteredReview.map((q, idx) => {
           const qId = q.question_id;
           const isCorrect = q.is_correct === true;
           const isUnanswered = !q.selected_answer || q.selected_answer.trim() === '';
@@ -413,7 +466,7 @@ export const QuizResultCard = ({
                               AI Conceptual Breakdown
                             </h4>
                           </div>
-                          <Badge variant="purple" size="sm">Gemini AI</Badge>
+                          <Badge variant="purple" size="sm">AI Tutor</Badge>
                         </div>
 
                         {/* Why Correct / Conceptual Breakdown */}

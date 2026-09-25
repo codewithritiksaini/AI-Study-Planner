@@ -173,7 +173,8 @@ export class GeminiClient {
     systemInstruction = '',
     expectJson = false,
     model = null,
-    timeoutMs = null
+    timeoutMs = null,
+    maxOutputTokens = null
   }) {
     if (!this.isConfigured()) {
       const error = new Error('Gemini API is not configured or API key is missing.');
@@ -182,13 +183,19 @@ export class GeminiClient {
       throw error;
     }
 
-    const selectedModel = model || AI_CONFIG.model;
+    const primaryModel = model || AI_CONFIG.model;
+    const modelCandidates = [
+      primaryModel,
+      ...(AI_CONFIG.fallbackModels || []).filter((m) => m !== primaryModel)
+    ];
+
     const effectiveTimeout = timeoutMs || this.timeoutMs;
+    const effectiveMaxTokens = maxOutputTokens || AI_CONFIG.generationConfig.maxOutputTokens;
 
     const config = {
       temperature: AI_CONFIG.generationConfig.temperature,
       topP: AI_CONFIG.generationConfig.topP,
-      maxOutputTokens: AI_CONFIG.generationConfig.maxOutputTokens
+      maxOutputTokens: effectiveMaxTokens
     };
 
     if (systemInstruction) {
@@ -204,14 +211,16 @@ export class GeminiClient {
     let lastError = null;
 
     while (attempt <= this.maxRetries) {
+      const currentModel = modelCandidates[attempt % modelCandidates.length];
+
       try {
         logger.debug('Dispatching Gemini API request', {
-          model: selectedModel,
+          model: currentModel,
           attempt: attempt + 1,
           timeoutMs: effectiveTimeout
         });
 
-        const response = await this._executeWithTimeout(selectedModel, prompt, config, effectiveTimeout);
+        const response = await this._executeWithTimeout(currentModel, prompt, config, effectiveTimeout);
         const rawText = response.text ? response.text.trim() : '';
 
         if (!rawText) {
@@ -227,7 +236,7 @@ export class GeminiClient {
         attempt++;
 
         const isTransient = isTransientError(err);
-        logger.warn(`Gemini attempt ${attempt} failed: ${err.message}`, {
+        logger.warn(`Gemini attempt ${attempt} on ${currentModel} failed: ${err.message}`, {
           code: err.code,
           isTransient,
           attempt,

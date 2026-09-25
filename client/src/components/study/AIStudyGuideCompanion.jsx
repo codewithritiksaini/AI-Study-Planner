@@ -1,28 +1,126 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  Sparkles,
-  BookOpen,
-  Code2,
-  HelpCircle,
-  Clock,
-  CheckCircle2,
-  XCircle,
   Copy,
   Check,
   RotateCw,
-  Lightbulb,
-  ArrowRight,
+  XCircle,
+  Clock,
+  BookOpen,
   ChevronDown,
   ChevronUp,
-  BrainCircuit,
-  Flame,
-  Layers,
-  FileCode,
-  Compass
+  CheckCircle2,
+  Tag
 } from 'lucide-react';
 import { aiService } from '../../services/ai.js';
 import Button from '../common/Button.jsx';
-import Badge from '../common/Badge.jsx';
+
+// Inline Markdown & Formatter for Stack Overflow / Technical Docs prose
+const formatInlineText = (text) => {
+  if (!text) return '';
+  // match **bold** and `code`
+  const parts = text.split(/(\*\*.*?\*\*|`.*?`)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return (
+        <strong key={i} className="font-semibold text-slate-900">
+          {part.slice(2, -2)}
+        </strong>
+      );
+    }
+    if (part.startsWith('`') && part.endsWith('`')) {
+      return (
+        <code
+          key={i}
+          className="px-1.5 py-0.5 rounded bg-slate-100 font-mono text-xs text-indigo-700 border border-slate-200"
+        >
+          {part.slice(1, -1)}
+        </code>
+      );
+    }
+    return part;
+  });
+};
+
+const renderMarkdownProse = (content) => {
+  if (!content) return null;
+
+  const lines = content.split('\n');
+  const elements = [];
+  let currentList = [];
+
+  const flushList = () => {
+    if (currentList.length > 0) {
+      elements.push(
+        <ul
+          key={`ul-${elements.length}`}
+          className="list-disc pl-5 space-y-1.5 my-3 text-slate-700 text-sm sm:text-[15px]"
+        >
+          {currentList.map((item, idx) => (
+            <li key={idx} className="leading-relaxed">
+              {formatInlineText(item)}
+            </li>
+          ))}
+        </ul>
+      );
+      currentList = [];
+    }
+  };
+
+  lines.forEach((line, index) => {
+    const trimmed = line.trim();
+    if (!trimmed) {
+      flushList();
+      return;
+    }
+
+    if (trimmed.startsWith('### ')) {
+      flushList();
+      elements.push(
+        <h3
+          key={`h3-${index}`}
+          className="text-base sm:text-lg font-bold text-slate-900 mt-6 mb-2"
+        >
+          {formatInlineText(trimmed.replace(/^###\s*/, ''))}
+        </h3>
+      );
+    } else if (trimmed.startsWith('## ')) {
+      flushList();
+      elements.push(
+        <h2
+          key={`h2-${index}`}
+          className="text-lg sm:text-xl font-bold text-slate-900 mt-7 mb-3 border-b border-slate-200 pb-1.5"
+        >
+          {formatInlineText(trimmed.replace(/^##\s*/, ''))}
+        </h2>
+      );
+    } else if (trimmed.startsWith('# ')) {
+      flushList();
+      elements.push(
+        <h1
+          key={`h1-${index}`}
+          className="text-xl sm:text-2xl font-extrabold text-slate-900 mt-8 mb-3"
+        >
+          {formatInlineText(trimmed.replace(/^#\s*/, ''))}
+        </h1>
+      );
+    } else if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+      currentList.push(trimmed.replace(/^[-*]\s*/, ''));
+    } else {
+      flushList();
+      elements.push(
+        <p
+          key={`p-${index}`}
+          className="text-sm sm:text-[15px] text-slate-700 leading-relaxed my-2.5 font-normal"
+        >
+          {formatInlineText(trimmed)}
+        </p>
+      );
+    }
+  });
+
+  flushList();
+  return elements;
+};
 
 export const AIStudyGuideCompanion = ({
   topicId,
@@ -30,6 +128,7 @@ export const AIStudyGuideCompanion = ({
   topicName,
   subjectName,
   estimatedMinutes = 20,
+  showTitle = true,
   className = ''
 }) => {
   const [guide, setGuide] = useState(null);
@@ -57,7 +156,7 @@ export const AIStudyGuideCompanion = ({
         setSelectedAnswers({});
         setRevealedExplanations({});
       } else {
-        setError('Study guide could not be generated for this topic.');
+        setError('Study material could not be generated for this topic.');
       }
     } catch (err) {
       console.error('Failed to load topic study guide:', err);
@@ -98,38 +197,27 @@ export const AIStudyGuideCompanion = ({
   // Calculate practice score
   const totalQuestions = guide?.self_check_questions?.length || 0;
   const answeredCount = Object.keys(selectedAnswers).length;
-  const correctCount = guide?.self_check_questions?.reduce((acc, q) => {
-    return selectedAnswers[q.id] === q.correct_index ? acc + 1 : acc;
-  }, 0) || 0;
+  const correctCount =
+    guide?.self_check_questions?.reduce((acc, q) => {
+      return selectedAnswers[q.id] === q.correct_index ? acc + 1 : acc;
+    }, 0) || 0;
 
   // ---------------------------------------------------------------------------
-  // SKELETON LOADER
+  // SKELETON LOADER (CLEAN STACK OVERFLOW READING STYLE)
   // ---------------------------------------------------------------------------
   if (loading && !guide) {
     return (
-      <div className={`bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-xs animate-pulse space-y-6 ${className}`}>
-        {/* Header Skeleton */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-100">
-          <div className="space-y-2">
-            <div className="h-4 w-40 bg-slate-200 rounded-full" />
-            <div className="h-6 w-64 bg-slate-200 rounded-lg" />
-          </div>
-          <div className="h-8 w-48 bg-slate-200 rounded-xl" />
+      <div className={`bg-white border border-slate-200 rounded-xl p-6 sm:p-10 max-w-4xl mx-auto space-y-6 animate-pulse ${className}`}>
+        <div className="space-y-3 pb-4 border-b border-slate-200">
+          <div className="h-4 w-28 bg-slate-200 rounded" />
+          <div className="h-8 w-3/4 bg-slate-200 rounded" />
         </div>
-
-        {/* Section 1 Skeleton */}
-        <div className="space-y-3">
-          <div className="h-20 bg-indigo-50/50 border border-indigo-100/50 rounded-2xl" />
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div className="h-16 bg-slate-100 rounded-xl" />
-            <div className="h-16 bg-slate-100 rounded-xl" />
-            <div className="h-16 bg-slate-100 rounded-xl" />
-          </div>
-          <div className="h-32 bg-slate-100 rounded-2xl" />
+        <div className="space-y-2">
+          <div className="h-4 bg-slate-100 rounded w-full" />
+          <div className="h-4 bg-slate-100 rounded w-5/6" />
+          <div className="h-4 bg-slate-100 rounded w-4/6" />
         </div>
-
-        {/* Section 2 Skeleton */}
-        <div className="h-48 bg-slate-100 rounded-2xl" />
+        <div className="h-36 bg-slate-100 rounded-lg mt-6" />
       </div>
     );
   }
@@ -139,18 +227,18 @@ export const AIStudyGuideCompanion = ({
   // ---------------------------------------------------------------------------
   if (error && !guide) {
     return (
-      <div className={`bg-white border border-rose-200 rounded-3xl p-6 sm:p-8 shadow-xs text-center ${className}`}>
-        <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mx-auto mb-3">
-          <XCircle className="w-6 h-6" />
+      <div className={`bg-white border border-rose-200 rounded-xl p-8 text-center max-w-xl mx-auto my-8 ${className}`}>
+        <div className="w-10 h-10 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center mx-auto mb-2.5">
+          <XCircle className="w-5 h-5" />
         </div>
-        <h3 className="text-base font-bold text-slate-900">Study Companion Unavailable</h3>
+        <h3 className="text-sm font-bold text-slate-900">Topic Material Unavailable</h3>
         <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">{error}</p>
         <Button
           variant="secondary"
           size="sm"
           onClick={() => loadGuide()}
           icon={RotateCw}
-          className="mt-4"
+          className="mt-3 text-xs"
         >
           Try Again
         </Button>
@@ -161,429 +249,271 @@ export const AIStudyGuideCompanion = ({
   if (!guide) return null;
 
   const { time_budget, concept, worked_examples, worked_example, self_check_questions } = guide;
-  const examplesList = Array.isArray(worked_examples) && worked_examples.length > 0
-    ? worked_examples
-    : worked_example
-    ? [worked_example]
-    : [];
+  const examplesList =
+    Array.isArray(worked_examples) && worked_examples.length > 0
+      ? worked_examples
+      : worked_example
+      ? [worked_example]
+      : [];
 
   return (
-    <div className={`space-y-8 ${className}`}>
+    <article className={`bg-white border border-slate-200 rounded-xl p-6 sm:p-10 max-w-4xl mx-auto text-slate-800 font-sans leading-relaxed ${className}`}>
+      
       {/* ========================================================================= */}
-      {/* 1. TOP HEADER & TIME CALIBRATION BAR */}
+      {/* ARTICLE HEADER (PLAIN STACK OVERFLOW / MDN STYLE) */}
       {/* ========================================================================= */}
-      <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-7 shadow-xs">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div className="flex items-center gap-3.5">
-            <div className="w-11 h-11 rounded-2xl bg-indigo-50 border border-indigo-100/80 text-indigo-600 flex items-center justify-center shrink-0 shadow-xs">
-              <BrainCircuit className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-600 flex items-center gap-1">
-                  <Sparkles className="w-3.5 h-3.5" />
-                  AI Guided Study Room
-                </span>
-                <span className="w-1 h-1 rounded-full bg-slate-300" />
-                <span className="text-xs text-slate-500 font-medium">
-                  {guide.subject_name}
-                </span>
-              </div>
-              <h2 className="text-xl sm:text-2xl font-bold text-slate-900 mt-0.5">
-                {guide.topic_name}
-              </h2>
-            </div>
-          </div>
+      {showTitle && (
+        <header className="pb-4 mb-6 border-b border-slate-200">
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight leading-tight">
+            {guide.topic_name}
+          </h1>
 
-          {/* Time Budget Breakdown Chips */}
-          <div className="flex flex-wrap items-center gap-2 bg-slate-50 border border-slate-200/80 p-2 px-3 rounded-2xl">
-            <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700 pr-2 border-r border-slate-200">
+          <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 mt-2.5">
+            <span className="inline-flex items-center gap-1 font-medium text-slate-700 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+              <Tag className="w-3 h-3 text-slate-400" />
+              {guide.subject_name}
+            </span>
+            <span>&bull;</span>
+            <span className="flex items-center gap-1">
               <Clock className="w-3.5 h-3.5 text-slate-400" />
-              <span>~{time_budget?.total_minutes || estimatedMinutes}m Total Budget</span>
-            </div>
-            <span className="text-[11px] font-semibold text-slate-600 px-2.5 py-1 rounded-xl bg-white border border-slate-200/60 shadow-2xs">
-              📖 ~{time_budget?.theory_minutes || 8}m Concept
-            </span>
-            <span className="text-[11px] font-semibold text-slate-600 px-2.5 py-1 rounded-xl bg-white border border-slate-200/60 shadow-2xs">
-              🔍 ~{time_budget?.example_minutes || 7}m Examples ({examplesList.length})
-            </span>
-            <span className="text-[11px] font-semibold text-indigo-700 px-2.5 py-1 rounded-xl bg-indigo-50 border border-indigo-100 shadow-2xs">
-              🎯 ~{time_budget?.practice_minutes || 5}m Practice ({totalQuestions} Questions)
+              Est. Reading time: ~{time_budget?.total_minutes || estimatedMinutes} mins
             </span>
           </div>
-        </div>
+        </header>
+      )}
+
+      {/* ========================================================================= */}
+      {/* TOPIC EXPLANATION & THEORY (CONTINUOUS PLAIN READING FLOW) */}
+      {/* ========================================================================= */}
+      <div className="space-y-4">
+        
+        {/* Intuition Callout (Clean subtle blockquote like Stack Overflow / MDN) */}
+        {concept?.one_liner_intuition && (
+          <blockquote className="border-l-4 border-slate-300 bg-slate-50 pl-4 py-2.5 text-slate-700 italic text-sm sm:text-[15px] my-3">
+            "{concept.one_liner_intuition}"
+          </blockquote>
+        )}
+
+        {/* Key Rules / Principles in Plain Bullet Points */}
+        {concept?.key_takeaways?.length > 0 && (
+          <div className="my-4">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+              Key Principles & Rules:
+            </h3>
+            <ul className="list-disc pl-5 space-y-1 text-sm sm:text-[15px] text-slate-700">
+              {concept.key_takeaways.map((takeaway, idx) => (
+                <li key={idx} className="leading-relaxed">
+                  {formatInlineText(takeaway)}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Main Prose / Markdown content parsed into clean text */}
+        {concept?.explanation_markdown && (
+          <div className="text-sm sm:text-[15px] text-slate-700 leading-relaxed font-normal">
+            {renderMarkdownProse(concept.explanation_markdown)}
+          </div>
+        )}
       </div>
 
       {/* ========================================================================= */}
-      {/* SECTION 1: 💡 CORE CONCEPT & INTUITION */}
+      {/* WORKED EXAMPLES (PLAIN INLINE FLOW BELOW EXPLANATION) */}
       {/* ========================================================================= */}
-      <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-xs space-y-6">
-        <div className="flex items-center justify-between pb-4 border-b border-slate-100">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center font-bold text-sm">
-              1
-            </div>
-            <div>
-              <h3 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
-                <BookOpen className="w-4 h-4 text-indigo-600" />
-                Core Concept & Intuitive Mental Model
-              </h3>
-              <p className="text-xs text-slate-500">
-                Understand the fundamental theory and invariants before looking at code.
-              </p>
-            </div>
-          </div>
-          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider hidden sm:block">
-            Estimated ~{time_budget?.theory_minutes || 8} mins
-          </span>
-        </div>
+      {examplesList.length > 0 && (
+        <div className="mt-8 pt-6 border-t border-slate-200 space-y-8">
+          <h2 className="text-xl font-bold text-slate-900">
+            Worked Examples
+          </h2>
 
-        {/* Memorable 1-Liner Intuition Box */}
-        <div className="p-4 sm:p-5 rounded-2xl bg-indigo-50/70 border border-indigo-200/80 flex items-start gap-3.5 shadow-2xs">
-          <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0 mt-0.5 shadow-xs">
-            <Lightbulb className="w-4 h-4" />
-          </div>
-          <div>
-            <h4 className="text-xs font-bold uppercase tracking-wider text-indigo-900">
-              The "Big Picture" Intuition
-            </h4>
-            <p className="text-sm sm:text-base font-semibold text-slate-900 mt-1 leading-snug">
-              "{concept?.one_liner_intuition}"
-            </p>
-          </div>
-        </div>
+          <div className="space-y-8">
+            {examplesList.map((example, exIdx) => (
+              <div key={example.id || exIdx} className="space-y-3">
+                
+                {/* Example Subheading */}
+                <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                  <span className="text-indigo-600 font-mono text-sm">Example {exIdx + 1}:</span>
+                  <span>{example.title || 'Standard Implementation'}</span>
+                </h3>
 
-        {/* Key Rules & Invariants Grid */}
-        <div>
-          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3 flex items-center gap-1.5">
-            <span>Essential Invariants & Rules</span>
-            <span className="text-[10px] text-slate-400 font-normal lowercase">(Read carefully)</span>
-          </h4>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {concept?.key_takeaways?.map((takeaway, idx) => (
-              <div
-                key={idx}
-                className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 hover:bg-white hover:border-indigo-200 transition-all shadow-2xs"
-              >
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="w-5 h-5 rounded-lg bg-emerald-100 text-emerald-700 text-xs font-bold flex items-center justify-center">
-                    {idx + 1}
-                  </span>
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Rule</span>
-                </div>
-                <p className="text-xs font-medium text-slate-800 leading-relaxed">
-                  {takeaway}
-                </p>
+                {/* Problem Statement in plain text */}
+                {example.problem_statement && (
+                  <p className="text-sm sm:text-[15px] text-slate-700 leading-relaxed">
+                    <strong className="text-slate-900 font-medium">Problem: </strong>
+                    {example.problem_statement}
+                  </p>
+                )}
+
+                {/* Stack Overflow Clean Code Block */}
+                {example.code_or_steps && (
+                  <div className="relative rounded-lg border border-slate-200 bg-slate-50 overflow-hidden my-3">
+                    <div className="flex items-center justify-between px-3 py-1.5 bg-slate-100/90 border-b border-slate-200 text-xs">
+                      <span className="font-mono text-[11px] text-slate-500 font-medium">code</span>
+                      <button
+                        type="button"
+                        onClick={() => handleCopyCode(example.code_or_steps, exIdx)}
+                        className="flex items-center gap-1 text-[11px] text-slate-600 hover:text-slate-900 transition-colors cursor-pointer py-0.5 px-2 rounded hover:bg-slate-200"
+                        title="Copy snippet"
+                      >
+                        {copiedIndex === exIdx ? (
+                          <>
+                            <Check className="w-3 h-3 text-emerald-600" />
+                            <span className="text-emerald-700 font-medium">Copied</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3 h-3 text-slate-500" />
+                            <span>Copy</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                    <pre className="p-4 font-mono text-xs sm:text-sm text-slate-900 overflow-x-auto leading-relaxed bg-[#f6f8fa]">
+                      <code>{example.code_or_steps}</code>
+                    </pre>
+                  </div>
+                )}
+
+                {/* Step-by-Step Breakdown in Plain Numbered List */}
+                {example.step_by_step_explanation && example.step_by_step_explanation.length > 0 && (
+                  <div className="pl-1 space-y-1.5">
+                    <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                      Step-by-step breakdown:
+                    </span>
+                    <ol className="list-decimal pl-5 space-y-1 text-sm sm:text-[15px] text-slate-700">
+                      {example.step_by_step_explanation.map((step, stepIdx) => (
+                        <li key={stepIdx} className="leading-relaxed">
+                          {formatInlineText(step)}
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+                )}
               </div>
             ))}
           </div>
         </div>
-
-        {/* In-Depth Markdown Conceptual Breakdown */}
-        <div className="p-5 sm:p-6 rounded-2xl bg-slate-50/60 border border-slate-200/80 space-y-3">
-          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
-            Conceptual Breakdown & Theory
-          </h4>
-          <div className="text-xs sm:text-sm text-slate-700 leading-relaxed whitespace-pre-line font-normal">
-            {concept?.explanation_markdown}
-          </div>
-        </div>
-      </div>
+      )}
 
       {/* ========================================================================= */}
-      {/* SECTION 2: 🔍 WORKED EXAMPLES & DETAILED BREAKDOWN (MULTIPLE EXAMPLES) */}
+      {/* PRACTICE QUESTIONS & SELF-CHECK (PLAIN FLOW AT THE BOTTOM) */}
       {/* ========================================================================= */}
-      <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-xs space-y-6">
-        <div className="flex items-center justify-between pb-4 border-b border-slate-100">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center font-bold text-sm">
-              2
-            </div>
-            <div>
-              <h3 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
-                <Code2 className="w-4 h-4 text-indigo-600" />
-                Worked Real-World Examples & Step-by-Step Breakdown
-              </h3>
-              <p className="text-xs text-slate-500">
-                Walk through practical problem scenarios, annotated code, and reasoning steps.
-              </p>
-            </div>
-          </div>
-          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider hidden sm:block">
-            Estimated ~{time_budget?.example_minutes || 7} mins
-          </span>
-        </div>
-
-        {/* Multiple Examples List */}
-        <div className="space-y-6">
-          {examplesList.map((example, exIdx) => (
-            <div
-              key={example.id || exIdx}
-              className="p-5 sm:p-6 rounded-2xl bg-slate-50/60 border border-slate-200 space-y-5 shadow-2xs"
-            >
-              {/* Example Header */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-200/70">
-                <div className="flex items-center gap-2">
-                  <span className="px-2.5 py-0.5 rounded-lg bg-indigo-100 text-indigo-800 text-[11px] font-bold uppercase tracking-wider">
-                    Example {exIdx + 1} of {examplesList.length}
-                  </span>
-                  <h4 className="text-sm sm:text-base font-bold text-slate-900">
-                    {example.title || `Worked Scenario ${exIdx + 1}`}
-                  </h4>
-                </div>
-              </div>
-
-              {/* Problem Statement */}
-              {example.problem_statement && (
-                <div className="p-4 rounded-xl bg-white border border-slate-200/80">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
-                    Problem Scenario / Requirement:
-                  </span>
-                  <p className="text-xs sm:text-sm font-semibold text-slate-900 leading-snug">
-                    {example.problem_statement}
-                  </p>
-                </div>
-              )}
-
-              {/* Annotated Code Block */}
-              {example.code_or_steps && (
-                <div className="rounded-2xl border border-slate-200 overflow-hidden bg-slate-900 shadow-xs">
-                  <div className="flex items-center justify-between px-4 py-2.5 bg-slate-800/90 border-b border-slate-700/60 text-xs">
-                    <span className="font-mono text-[11px] text-slate-300 font-semibold flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-emerald-400" />
-                      Implementation / Algorithmic Execution
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => handleCopyCode(example.code_or_steps, exIdx)}
-                      className="flex items-center gap-1 text-[11px] text-slate-400 hover:text-white transition-colors cursor-pointer py-1 px-2.5 rounded-md hover:bg-slate-700/50"
-                    >
-                      {copiedIndex === exIdx ? (
-                        <>
-                          <Check className="w-3.5 h-3.5 text-emerald-400" />
-                          <span className="text-emerald-400 font-semibold">Copied!</span>
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="w-3.5 h-3.5" />
-                          <span>Copy</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-                  <pre className="p-4 sm:p-5 font-mono text-xs sm:text-sm text-emerald-300 overflow-x-auto leading-relaxed whitespace-pre">
-                    <code>{example.code_or_steps}</code>
-                  </pre>
-                </div>
-              )}
-
-              {/* Step-by-Step Breakdown */}
-              {example.step_by_step_explanation && (
-                <div>
-                  <h5 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2.5">
-                    Step-by-Step Reasoning:
-                  </h5>
-                  <div className="space-y-2">
-                    {example.step_by_step_explanation.map((step, stepIdx) => (
-                      <div
-                        key={stepIdx}
-                        className="p-3.5 rounded-xl bg-white border border-slate-200/80 flex items-start gap-3 shadow-2xs"
-                      >
-                        <span className="w-5 h-5 rounded-md bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
-                          {stepIdx + 1}
-                        </span>
-                        <p className="text-xs sm:text-sm text-slate-800 leading-relaxed font-medium">
-                          {step}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* ========================================================================= */}
-      {/* SECTION 3: 🎯 PRACTICE QUIZ & ACTIVE RECALL ZONE */}
-      {/* ========================================================================= */}
-      <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-xs space-y-6">
-        <div className="flex items-center justify-between pb-4 border-b border-slate-100">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center font-bold text-sm">
-              3
-            </div>
-            <div>
-              <h3 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
-                <HelpCircle className="w-4 h-4 text-indigo-600" />
-                Practice Zone & Rapid Knowledge Check
-              </h3>
-              <p className="text-xs text-slate-500">
-                Answer these calibrated self-check questions to verify and lock in your active recall.
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Score:</span>
-            <span className="px-2.5 py-1 rounded-xl bg-indigo-50 text-indigo-700 font-extrabold text-xs border border-indigo-100">
-              {correctCount} / {totalQuestions} Correct
+      {self_check_questions?.length > 0 && (
+        <div className="mt-10 pt-6 border-t border-slate-200 space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold text-slate-900">
+              Practice Questions
+            </h2>
+            <span className="text-xs font-semibold text-slate-500">
+              Score: {correctCount} / {totalQuestions}
             </span>
           </div>
-        </div>
 
-        {/* Questions List */}
-        <div className="space-y-5">
-          {self_check_questions?.map((q, qIndex) => {
-            const selectedIdx = selectedAnswers[q.id];
-            const isAnswered = selectedIdx !== undefined;
-            const isCorrect = isAnswered && selectedIdx === q.correct_index;
-            const isRevealed = revealedExplanations[q.id];
+          <div className="space-y-6">
+            {self_check_questions.map((q, qIndex) => {
+              const selectedIdx = selectedAnswers[q.id];
+              const isAnswered = selectedIdx !== undefined;
+              const isCorrect = isAnswered && selectedIdx === q.correct_index;
+              const isRevealed = revealedExplanations[q.id];
 
-            return (
-              <div
-                key={q.id || qIndex}
-                className={`p-5 sm:p-6 rounded-2xl border transition-all ${
-                  isAnswered
-                    ? isCorrect
-                      ? 'bg-emerald-50/30 border-emerald-300'
-                      : 'bg-rose-50/30 border-rose-300'
-                    : 'bg-slate-50/60 border-slate-200 shadow-2xs'
-                }`}
-              >
-                {/* Question Header */}
-                <div className="flex items-start justify-between gap-3 mb-3.5">
-                  <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-white border border-slate-200 text-slate-700">
-                      Question {qIndex + 1} of {totalQuestions}
+              return (
+                <div key={q.id || qIndex} className="space-y-2.5 pb-5 border-b border-slate-100 last:border-b-0">
+                  {/* Question Heading */}
+                  <div className="flex items-baseline gap-2">
+                    <span className="font-bold text-slate-900 text-sm sm:text-base font-mono shrink-0">
+                      Q{qIndex + 1}.
                     </span>
-                    {q.type && (
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                        &bull; {q.type.replace(/_/g, ' ')}
-                      </span>
-                    )}
+                    <p className="font-semibold text-slate-900 text-sm sm:text-base leading-snug">
+                      {q.question}
+                    </p>
                   </div>
 
-                  {isAnswered && (
-                    <span className={`inline-flex items-center gap-1 text-xs font-bold px-2.5 py-0.5 rounded-full ${
-                      isCorrect
-                        ? 'bg-emerald-100 text-emerald-800'
-                        : 'bg-rose-100 text-rose-800'
-                    }`}>
-                      {isCorrect ? (
-                        <>
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Correct!
-                        </>
-                      ) : (
-                        <>
-                          <XCircle className="w-3.5 h-3.5 text-rose-600" /> Incorrect
-                        </>
-                      )}
-                    </span>
-                  )}
-                </div>
+                  {/* Clean Radio Options (Plain, Stack Overflow style) */}
+                  <div className="space-y-1.5 pl-6 pt-1">
+                    {q.options?.map((option, optIdx) => {
+                      const isOptionSelected = selectedIdx === optIdx;
+                      const isOptionCorrect = optIdx === q.correct_index;
 
-                <h5 className="text-sm sm:text-base font-bold text-slate-900 leading-snug mb-4">
-                  {q.question}
-                </h5>
+                      let rowCls = 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700';
 
-                {/* Options List */}
-                <div className="space-y-2.5">
-                  {q.options?.map((option, optIdx) => {
-                    const isOptionSelected = selectedIdx === optIdx;
-                    const isOptionCorrect = optIdx === q.correct_index;
-
-                    let optionStyle = 'bg-white border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-50';
-
-                    if (isAnswered) {
-                      if (isOptionSelected && isCorrect) {
-                        optionStyle = 'bg-emerald-100/80 border-emerald-500 text-emerald-950 font-bold shadow-xs';
-                      } else if (isOptionSelected && !isCorrect) {
-                        optionStyle = 'bg-rose-100/80 border-rose-400 text-rose-950 font-semibold';
-                      } else if (isOptionCorrect) {
-                        optionStyle = 'bg-emerald-50/70 border-emerald-400 text-emerald-900 font-semibold';
-                      } else {
-                        optionStyle = 'bg-slate-100/60 border-slate-200/50 text-slate-400 opacity-60';
+                      if (isAnswered) {
+                        if (isOptionSelected && isCorrect) {
+                          rowCls = 'border-emerald-500 bg-emerald-50/70 text-emerald-950 font-semibold';
+                        } else if (isOptionSelected && !isCorrect) {
+                          rowCls = 'border-rose-400 bg-rose-50/70 text-rose-950 font-medium';
+                        } else if (isOptionCorrect) {
+                          rowCls = 'border-emerald-300 bg-emerald-50/30 text-emerald-900 font-medium';
+                        } else {
+                          rowCls = 'border-slate-200 text-slate-400 opacity-60';
+                        }
                       }
-                    }
 
-                    return (
-                      <button
-                        key={optIdx}
-                        type="button"
-                        disabled={isAnswered}
-                        onClick={() => handleSelectOption(q.id, optIdx)}
-                        className={`w-full text-left p-3.5 rounded-xl border text-xs sm:text-sm transition-all flex items-center justify-between gap-3 cursor-pointer ${optionStyle}`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <span className="w-6 h-6 rounded-lg bg-slate-100 text-slate-600 text-xs font-bold flex items-center justify-center shrink-0">
-                            {String.fromCharCode(65 + optIdx)}
-                          </span>
-                          <span>{option}</span>
-                        </div>
+                      return (
+                        <label
+                          key={optIdx}
+                          onClick={() => !isAnswered && handleSelectOption(q.id, optIdx)}
+                          className={`w-full flex items-center justify-between gap-3 p-2.5 px-3 rounded-lg border text-sm transition-all cursor-pointer select-none ${rowCls} ${
+                            isAnswered ? 'cursor-default' : ''
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <span className="w-5 h-5 rounded-md bg-slate-100 text-slate-700 text-xs font-mono font-bold flex items-center justify-center shrink-0">
+                              {String.fromCharCode(65 + optIdx)}
+                            </span>
+                            <span>{option}</span>
+                          </div>
 
-                        {isAnswered && isOptionSelected && (
-                          <span>
-                            {isCorrect ? (
-                              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                            ) : (
-                              <XCircle className="w-4 h-4 text-rose-500" />
-                            )}
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
+                          {isAnswered && isOptionSelected && (
+                            <span className="text-xs font-bold shrink-0">
+                              {isCorrect ? '✓ Correct' : '✗ Incorrect'}
+                            </span>
+                          )}
+                        </label>
+                      );
+                    })}
+                  </div>
 
-                {/* Explanation Toggle & Content */}
-                <div className="mt-4 pt-3 border-t border-slate-200/60">
-                  <button
-                    type="button"
-                    onClick={() => toggleExplanation(q.id)}
-                    className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 cursor-pointer transition-colors"
-                  >
-                    <span>{isRevealed ? 'Hide Detailed Solution & Takeaway' : 'Show Detailed Solution & Takeaway'}</span>
-                    {isRevealed ? (
-                      <ChevronUp className="w-3.5 h-3.5" />
-                    ) : (
-                      <ChevronDown className="w-3.5 h-3.5" />
+                  {/* Plain Solution Toggle */}
+                  <div className="pl-6 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => toggleExplanation(q.id)}
+                      className="text-xs font-medium text-indigo-600 hover:text-indigo-800 hover:underline cursor-pointer inline-flex items-center gap-1"
+                    >
+                      <span>{isRevealed ? 'Hide Explanation' : 'View Explanation'}</span>
+                      {isRevealed ? (
+                        <ChevronUp className="w-3.5 h-3.5" />
+                      ) : (
+                        <ChevronDown className="w-3.5 h-3.5" />
+                      )}
+                    </button>
+
+                    {isRevealed && (
+                      <div className="mt-2 p-3 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-800 leading-relaxed font-normal">
+                        <strong className="text-slate-900 block mb-0.5">
+                          Correct Answer: Option {String.fromCharCode(65 + q.correct_index)}
+                        </strong>
+                        {q.explanation}
+                      </div>
                     )}
-                  </button>
-
-                  {isRevealed && (
-                    <div className="mt-3 p-4 rounded-xl bg-amber-50/80 border border-amber-200/80 text-xs text-amber-950 leading-relaxed font-normal animate-in fade-in duration-150">
-                      <span className="font-bold text-amber-900 uppercase tracking-wider block mb-1">
-                        💡 Solution Breakdown:
-                      </span>
-                      {q.explanation}
-                    </div>
-                  )}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Completion Cheer Banner */}
-        {answeredCount === totalQuestions && (
-          <div className="p-4 sm:p-5 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-between gap-3 animate-in fade-in">
-            <div className="flex items-center gap-3">
-              <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0" />
-              <div>
-                <h5 className="text-sm font-bold text-emerald-950">
-                  Topic Practice Complete!
-                </h5>
-                <p className="text-xs text-emerald-800 mt-0.5">
-                  You scored {correctCount} of {totalQuestions}. You are in the top flow state—click "Finish Session" above to save your verified study time and reflection!
-                </p>
-              </div>
-            </div>
+              );
+            })}
           </div>
-        )}
-      </div>
-    </div>
+
+          {answeredCount === totalQuestions && (
+            <div className="mt-4 p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-xs text-emerald-800 flex items-center gap-2 font-medium">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span>
+                You completed all questions ({correctCount}/{totalQuestions} correct).
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+    </article>
   );
 };
 

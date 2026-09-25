@@ -8,7 +8,8 @@ import {
   Clock, 
   RotateCcw,
   Sparkles,
-  BookOpen
+  BookOpen,
+  FileText
 } from 'lucide-react';
 import Card, { CardHeader, CardTitle, CardContent } from '../common/Card.jsx';
 import Button from '../common/Button.jsx';
@@ -196,11 +197,11 @@ export const QuizHistoryTable = ({
                     <Button
                       variant="outline"
                       size="sm"
-                      icon={ArrowRight}
+                      icon={FileText}
                       onClick={() => onReviewAttempt(att.attempt_id)}
-                      className="text-xs"
+                      className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 border-indigo-200 shadow-2xs"
                     >
-                      Review
+                      View Report
                     </Button>
                   </td>
                 </tr>

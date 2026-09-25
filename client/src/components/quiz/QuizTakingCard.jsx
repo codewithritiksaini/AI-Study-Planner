@@ -6,7 +6,8 @@ import {
   AlertTriangle, 
   CheckCircle2, 
   Clock, 
-  HelpCircle 
+  HelpCircle,
+  FileText
 } from 'lucide-react';
 import Card, { CardHeader, CardTitle, CardContent } from '../common/Card.jsx';
 import Button from '../common/Button.jsx';
@@ -221,12 +222,12 @@ export const QuizTakingCard = ({
               <Button
                 type="button"
                 variant="primary"
-                icon={Send}
+                icon={FileText}
                 onClick={handleInitialSubmitClick}
                 disabled={submitting}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white border-transparent"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white border-transparent font-bold shadow-xs px-5"
               >
-                {submitting ? 'Evaluating Answers...' : 'Submit Assessment'}
+                {submitting ? 'Generating Your Report...' : 'View Result & Report'}
               </Button>
             )}
           </div>
@@ -245,10 +246,10 @@ export const QuizTakingCard = ({
               Unanswered Questions Warning
             </h3>
             <p className="text-xs text-slate-600 mt-2 leading-relaxed">
-              You have <strong className="text-amber-700 font-semibold">{unansweredCount} unanswered</strong> question(s) out of {questions.length}. Any blank question will receive 0 points.
+              You have <strong className="text-amber-700 font-semibold">{unansweredCount} unanswered</strong> question(s) out of {questions.length}. Any blank question will receive 0 points in the report.
             </p>
             <p className="text-xs text-slate-500 mt-1">
-              Do you want to submit anyway or return to complete your answers?
+              Do you want to finalize now and view your performance report, or return to answer remaining questions?
             </p>
 
             <div className="flex items-center justify-end gap-3 mt-6">
@@ -263,9 +264,9 @@ export const QuizTakingCard = ({
                 type="button"
                 variant="primary"
                 onClick={performSubmission}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
               >
-                Submit Anyway
+                Proceed & View Report
               </Button>
             </div>
           </div>

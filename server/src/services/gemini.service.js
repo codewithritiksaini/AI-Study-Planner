@@ -38,17 +38,23 @@ class GeminiService {
       prompt,
       systemInstruction,
       expectJson,
-      model
+      model,
+      maxOutputTokens
     });
 
     if (expectJson) {
       try {
-        let cleanJson = rawText;
+        let cleanJson = rawText ? rawText.trim() : '';
         if (cleanJson.startsWith('```json')) {
           cleanJson = cleanJson.replace(/^```json\s*/, '').replace(/\s*```$/, '');
         } else if (cleanJson.startsWith('```')) {
           cleanJson = cleanJson.replace(/^```\s*/, '').replace(/\s*```$/, '');
         }
+
+        // Clean unescaped backslashes that break JSON.parse (e.g. LaTeX \pi, \alpha, \pmod, \dots)
+        // Uses function replacer so JavaScript does not treat \\ as a single backslash escape
+        cleanJson = cleanJson.replace(/\\([^"\\\/bfnrtu]|u[0-9a-fA-F]{0,3}[^0-9a-fA-F])/g, (_, char) => '\\\\' + char);
+
         return JSON.parse(cleanJson);
       } catch (jsonErr) {
         logger.warn(`Failed to parse AI response as JSON: ${jsonErr.message}`, { rawText });

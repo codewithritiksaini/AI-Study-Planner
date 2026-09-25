@@ -5,19 +5,19 @@ import { env } from './env.js';
  * Enforces timeouts, generation parameters, token bounds, and retry policies.
  */
 export const AI_CONFIG = {
-  // Model selection
-  model: env.GEMINI_MODEL || 'gemini-3.8-flash',
-  fallbackModels: ['gemini-3.8-flash', 'gemini-2.5-pro'],
+  // Model selection (ultra-fast, responsive lite models)
+  model: 'gemini-3.5-flash-lite',
+  fallbackModels: ['gemini-3.5-flash-lite', 'gemini-flash-lite-latest', 'gemini-3.1-flash-lite'],
 
-  // Network & execution limits
-  timeoutMs: 30000,
+  // Network & execution limits (fast 8s timeout, 1 retry)
+  timeoutMs: 8000,
   maxRetries: 1,
 
   // Generation parameters
   generationConfig: {
     temperature: 0.2, // Low temperature for deterministic, factual reasoning
     topP: 0.95,
-    maxOutputTokens: 2048
+    maxOutputTokens: 8192
   },
 
   // Input boundaries

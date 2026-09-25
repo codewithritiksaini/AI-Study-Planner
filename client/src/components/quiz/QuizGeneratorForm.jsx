@@ -1,13 +1,34 @@
 import React, { useState, useEffect } from 'react';
-import { Brain, Sparkles, AlertCircle, RefreshCw } from 'lucide-react';
+import { 
+  Brain, 
+  Sparkles, 
+  AlertCircle, 
+  RefreshCw, 
+  Lightbulb, 
+  CheckCircle2,
+  Loader2,
+  Zap,
+  BookOpen,
+  Award
+} from 'lucide-react';
 import Card, { CardHeader, CardTitle, CardContent } from '../common/Card.jsx';
 import Button from '../common/Button.jsx';
 import Select from '../common/Select.jsx';
 import { subjectService } from '../../services/subjects.js';
 import quizService from '../../services/quizzes.js';
 
+const STUDY_TIPS = [
+  { icon: Sparkles, tip: "Active Recall: Quizzing strengthens memory traces up to 150% more effectively than re-reading notes!" },
+  { icon: Brain, tip: "Spaced Repetition: Testing key concepts over regular intervals flattens the forgetting curve and boosts retention." },
+  { icon: Lightbulb, tip: "Interleaving Effect: Practicing diverse conceptual questions trains high-speed problem recognition." },
+  { icon: Zap, tip: "Immediate Feedback: Reviewing detailed question explanations right after testing solidifies correct reasoning." }
+];
+
 export const QuizGeneratorForm = ({
   onQuizGenerated,
+  onGeneratingStart,
+  onGeneratingError,
+  onGeneratingChange,
   initialSubjectId = '',
   initialTopicId = '',
   className = ''
@@ -99,11 +120,32 @@ export const QuizGeneratorForm = ({
       return;
     }
 
+    const currentSub = subjects.find(s => s.id === selectedSubjectId);
+    const currentTop = topics.find(t => t.id === selectedTopicId);
+
     try {
       setGenerating(true);
       setError(null);
       
-      // 1. Generate quiz with Gemini AI via backend
+      // Notify parent to display full-page loading animation
+      if (onGeneratingStart) {
+        onGeneratingStart({
+          subjectName: currentSub?.name || '',
+          topicName: currentTop?.name || '',
+          difficulty,
+          questionCount: Number(questionCount)
+        });
+      }
+      if (onGeneratingChange) {
+        onGeneratingChange(true, {
+          subjectName: currentSub?.name || '',
+          topicName: currentTop?.name || '',
+          difficulty,
+          questionCount: Number(questionCount)
+        });
+      }
+
+      // 1. Generate quiz with AI via backend
       const quiz = await quizService.generateQuiz({
         subjectId: selectedSubjectId,
         topicId: selectedTopicId,
@@ -122,6 +164,12 @@ export const QuizGeneratorForm = ({
       console.error('Quiz generation error:', err);
       const msg = err.response?.data?.message || err.message || 'Quiz generation is temporarily unavailable.';
       setError(msg);
+      if (onGeneratingError) {
+        onGeneratingError(msg);
+      }
+      if (onGeneratingChange) {
+        onGeneratingChange(false, null);
+      }
     } finally {
       setGenerating(false);
     }
@@ -220,13 +268,27 @@ export const QuizGeneratorForm = ({
           <div className="pt-2">
             <Button
               type="submit"
-              icon={generating ? RefreshCw : Sparkles}
+              icon={generating ? Loader2 : Sparkles}
               disabled={generating || !selectedSubjectId || !selectedTopicId || topics.length === 0}
-              className="w-full justify-center"
+              className="w-full justify-center font-bold shadow-xs py-2.5"
             >
-              {generating ? 'Synthesizing Quiz with Gemini...' : `Generate ${questionCount}-Question AI Quiz`}
+              {generating ? (
+                <span className="flex items-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Generating Assessment...
+                </span>
+              ) : (
+                `Generate ${questionCount}-Question AI Quiz`
+              )}
             </Button>
           </div>
+
+          {generating && (
+            <div className="p-2.5 rounded-xl bg-indigo-50 border border-indigo-200 flex items-center gap-2 text-xs text-indigo-700 animate-pulse">
+              <Sparkles className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+              <span>Generating quiz — Live synthesis on the right →</span>
+            </div>
+          )}
 
           <p className="text-[11px] text-slate-500 text-center leading-relaxed">
             * Generated questions are evaluated deterministically on the server. Answer keys remain strictly confidential until submission.

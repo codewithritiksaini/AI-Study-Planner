@@ -14,6 +14,7 @@ import PageHeader from '../components/common/PageHeader.jsx';
 import Badge from '../components/common/Badge.jsx';
 import Button from '../components/common/Button.jsx';
 import QuizGeneratorForm from '../components/quiz/QuizGeneratorForm.jsx';
+import QuizLoadingCard from '../components/quiz/QuizLoadingCard.jsx';
 import QuizTakingCard from '../components/quiz/QuizTakingCard.jsx';
 import QuizResultCard from '../components/quiz/QuizResultCard.jsx';
 import QuizHistoryTable from '../components/quiz/QuizHistoryTable.jsx';
@@ -34,6 +35,7 @@ export const Quiz = () => {
   const [activeQuiz, setActiveQuiz] = useState(null);
   const [activeAttemptId, setActiveAttemptId] = useState(null);
   const [activeResult, setActiveResult] = useState(null);
+  const [generatingMetadata, setGeneratingMetadata] = useState(null);
 
   const [submittingAttempt, setSubmittingAttempt] = useState(false);
   const [loadingAttemptReview, setLoadingAttemptReview] = useState(false);
@@ -69,6 +71,7 @@ export const Quiz = () => {
 
   // Called when AI quiz generator finishes generating quiz & starting attempt
   const handleQuizGenerated = (quiz, attempt) => {
+    setGeneratingMetadata(null);
     setActiveQuiz(quiz);
     setActiveAttemptId(attempt?.id);
     setActiveResult(null);
@@ -162,8 +165,8 @@ export const Quiz = () => {
         </div>
       )}
 
-      {/* Navigation Tabs (Only visible when NOT actively taking a quiz) */}
-      {currentMode !== 'TAKING' && currentMode !== 'RESULT' && (
+      {/* Navigation Tabs (Only visible when NOT actively taking or generating a quiz) */}
+      {currentMode !== 'TAKING' && currentMode !== 'RESULT' && currentMode !== 'GENERATING' && (
         <div className="flex border-b border-slate-200">
           <button
             onClick={() => setActiveTab('PRACTICE')}
@@ -199,6 +202,16 @@ export const Quiz = () => {
         </div>
       )}
 
+      {/* VIEW 0: FULL-PAGE QUIZ GENERATING ANIMATION (Same full-width layout as Taking MCQs) */}
+      {currentMode === 'GENERATING' && generatingMetadata && (
+        <QuizLoadingCard
+          subjectName={generatingMetadata.subjectName}
+          topicName={generatingMetadata.topicName}
+          difficulty={generatingMetadata.difficulty}
+          questionCount={generatingMetadata.questionCount}
+        />
+      )}
+
       {/* VIEW 1: ACTIVE QUIZ TAKING */}
       {currentMode === 'TAKING' && activeQuiz && (
         <QuizTakingCard
@@ -226,6 +239,15 @@ export const Quiz = () => {
           <div className="lg:col-span-1">
             <QuizGeneratorForm
               onQuizGenerated={handleQuizGenerated}
+              onGeneratingStart={(meta) => {
+                setGeneratingMetadata(meta);
+                setCurrentMode('GENERATING');
+              }}
+              onGeneratingError={(err) => {
+                setGeneratingMetadata(null);
+                setCurrentMode('PRACTICE');
+                setGlobalError(err);
+              }}
               initialSubjectId={preselectedSubjectId}
               initialTopicId={preselectedTopicId}
             />
