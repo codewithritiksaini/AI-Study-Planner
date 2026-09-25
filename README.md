@@ -167,12 +167,30 @@ npm run client
 
 ---
 
+### 5. Running Database Tests
+Verify Row Level Security (RLS) and cross-user data isolation:
+```bash
+# Verify Phase 2 Profile RLS
+cd server && npm run test:rls
+
+# Verify Phase 3 Subject & Topic Hierarchy RLS & Cascade Deletions
+cd server && npm run test:rls:phase3
+```
+
+---
+
 ## 🧭 Project Roadmap & Phases
 
 * [x] **Phase 0:** Complete Project Architecture & Technical Blueprint (`docs/PHASE_0_ARCHITECTURE_BLUEPRINT.md`)
 * [x] **Phase 1:** Project Setup, Frontend Foundation & Backend Foundation
 * [x] **Phase 2 (COMPLETED):** Authentication & Student Profile Management (Supabase Auth & RLS)
-* [ ] **Phase 3:** Subjects & Syllabus Hierarchy Management
+* [x] **Phase 3 (COMPLETED):** Subject, Syllabus & Topic Management
+  * `subjects` table: `id`, `user_id` (FK), `name`, `description`, `exam_date`, `target_score`, `color`, `icon`, timestamps.
+  * `topics` table: `id`, `subject_id` (FK), `name`, `description`, `difficulty`, `estimated_minutes`, `status`, `completion_percentage`, timestamps.
+  * PostgreSQL triggers, indexes, and 8 Row Level Security policies enforcing zero cross-user leakage.
+  * Layered Express backend with Zod validation (`/api/subjects`, `/api/topics`, `/api/subjects/summary`).
+  * Strict Light Theme UI: Curriculum list with search (`/subjects`), Subject Details with syllabus checklist & progress velocity (`/subjects/:id`), and live Dashboard metrics integration.
+  * 100% passing automated test suite (`npm run test:rls:phase3`).
 * [ ] **Phase 4:** Focus Mode & Live Study Session Stopwatch
 * [ ] **Phase 5:** Deterministic Priority & Rule-Based Timetable Generator *(Core MVP)*
 * [ ] **Phase 6:** Server-Side Google Gemini AI Gateway Integration

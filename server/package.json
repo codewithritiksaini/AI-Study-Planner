@@ -8,7 +8,8 @@
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
     "migrate": "node src/scripts/migrate.js",
-    "test:rls": "node src/scripts/test_rls.js"
+    "test:rls": "node src/scripts/test_rls.js",
+    "test:rls:phase3": "node src/scripts/test_rls_phase3.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.1",

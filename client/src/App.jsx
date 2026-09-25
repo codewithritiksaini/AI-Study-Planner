@@ -9,6 +9,7 @@ import Register from './pages/Register.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import Planner from './pages/Planner.jsx';
 import Subjects from './pages/Subjects.jsx';
+import SubjectDetails from './pages/SubjectDetails.jsx';
 import Study from './pages/Study.jsx';
 import Quiz from './pages/Quiz.jsx';
 import Progress from './pages/Progress.jsx';
@@ -39,6 +40,7 @@ export function App() {
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/planner" element={<Planner />} />
             <Route path="/subjects" element={<Subjects />} />
+            <Route path="/subjects/:id" element={<SubjectDetails />} />
             <Route path="/study" element={<Study />} />
             <Route path="/quiz" element={<Quiz />} />
             <Route path="/progress" element={<Progress />} />
