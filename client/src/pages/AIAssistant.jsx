@@ -98,7 +98,7 @@ export const AIAssistant = () => {
       <PageHeader
         title="AI Study Advisor"
         subtitle="Context-aware study guidance, topic roadmaps, and personalized advice powered by Google Gemini 2.5 Flash."
-        badge={<Badge variant="primary">Phase 6 Active</Badge>}
+        badge={<Badge variant="primary">Gemini 2.5 Flash</Badge>}
       />
 
       {/* Top Section: Daily Recommendation Widget */}
@@ -240,7 +240,7 @@ export const AIAssistant = () => {
               Grounded AI Architecture
             </p>
             <p className="leading-relaxed">
-              Gemini operates strictly as an <strong>intelligent advisor</strong>. It has zero direct write access to your database. Your study schedule is governed by the Phase 5 mathematical rule engine.
+              Gemini operates strictly as an <strong>intelligent advisor</strong>. It has zero direct write access to your database. Your study schedule is governed by our deterministic constraint-satisfaction engine.
             </p>
           </div>
         </div>

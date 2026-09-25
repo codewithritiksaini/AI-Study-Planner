@@ -59,7 +59,7 @@ export const AdaptiveExplainerCard = () => {
             <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
               How Your Plan Adapts
               <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
-                Phase 8 Feedback Engine
+                Adaptive Feedback Engine
               </span>
             </h4>
             <p className="text-xs text-slate-500 mt-0.5">

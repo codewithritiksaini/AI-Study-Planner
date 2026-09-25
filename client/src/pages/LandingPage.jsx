@@ -20,7 +20,7 @@ export const LandingPage = () => {
           </div>
           <span className="text-lg font-bold tracking-tight text-slate-900">AI Study Planner</span>
           <Badge variant="primary" size="sm" className="bg-indigo-50 text-indigo-700 border-indigo-200 text-[10px] ml-1">
-            Phase 2 Active
+            AI Powered
           </Badge>
         </div>
 

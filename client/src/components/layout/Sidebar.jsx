@@ -22,12 +22,12 @@ export const navigationItems = [
   { label: 'Planner', path: '/planner', icon: Calendar },
   { label: 'Subjects', path: '/subjects', icon: BookOpen },
   { label: 'Study', path: '/study', icon: Timer },
-  { label: 'AI Advisor', path: '/ai', icon: Sparkles, badge: 'Phase 6' },
+  { label: 'AI Advisor', path: '/ai', icon: Sparkles, badge: 'AI Powered' },
   { label: 'Quiz', path: '/quiz', icon: HelpCircle },
   { label: 'Progress', path: '/progress', icon: CheckCircle2 },
   { label: 'Analytics', path: '/analytics', icon: BarChart3 },
-  { label: 'Smart Actions', path: '/recommendations', icon: Target, badge: 'Phase 10' },
-  { label: 'Interview Demo', path: '/interview-demo', icon: Sparkles, badge: 'Phase 12' },
+  { label: 'Smart Actions', path: '/recommendations', icon: Target, badge: 'Smart Recs' },
+  { label: 'Interview Demo', path: '/interview-demo', icon: Sparkles, badge: 'Live Demo' },
   { label: 'Profile', path: '/profile', icon: User },
   { label: 'Settings', path: '/settings', icon: Settings }
 ];
@@ -91,13 +91,13 @@ export const Sidebar = ({ onClose }) => {
       {/* Footer Info / Project Status */}
       <div className="p-4 border-t border-slate-200 bg-slate-50/80">
         <div className="flex items-center justify-between mb-1.5">
-          <span className="text-[11px] font-semibold text-slate-600">CSE Capstone</span>
+          <span className="text-[11px] font-semibold text-slate-600">Adaptive Planner</span>
           <Badge variant="primary" size="sm" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px]">
-            Phase 12
+            Production Ready
           </Badge>
         </div>
         <p className="text-[11px] text-slate-400 leading-tight">
-          Production Ready • Phase 0–12 Architecture Verified.
+          Adaptive Engine & Isolated Gemini AI active.
         </p>
       </div>
     </aside>

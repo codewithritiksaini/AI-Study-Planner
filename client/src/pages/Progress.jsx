@@ -100,7 +100,7 @@ export const Progress = () => {
       <PageHeader
         title="Academic & Topic Mastery Progress"
         subtitle="Track your curriculum coverage, syllabus completion rates, and verified quiz mastery."
-        badge={<Badge variant="primary">Phase 7 Active</Badge>}
+        badge={<Badge variant="primary">Curriculum Tracking</Badge>}
         action={
           <Button
             icon={Brain}

@@ -154,7 +154,7 @@ export const Dashboard = () => {
       <PageHeader
         title={`Welcome back, ${studentName} 👋`}
         subtitle="Track your daily study velocity, live focus sessions, and academic preparation milestones."
-        badge={<Badge variant="primary">{profile?.branch ? `${profile.branch} • Sem ${profile.semester || 1}` : 'Phase 4 Active'}</Badge>}
+        badge={<Badge variant="primary">{profile?.branch ? `${profile.branch} • Sem ${profile.semester || 1}` : 'Semester Active'}</Badge>}
         action={
           <Button
             icon={Play}
@@ -617,7 +617,7 @@ export const Dashboard = () => {
                     <p className="text-[11px] text-slate-500">7-day performance snapshot</p>
                   </div>
                 </div>
-                <Badge variant="primary" size="sm">Phase 9</Badge>
+                <Badge variant="primary" size="sm">Live Analytics</Badge>
               </div>
             </CardHeader>
             <CardContent className="pt-2 space-y-3">

@@ -78,7 +78,7 @@ export const Recommendations = () => {
               Study Recommendations
             </h1>
             <Badge variant="purple" size="md" className="font-semibold">
-              Phase 10 Engine
+              Smart Study Engine
             </Badge>
           </div>
           <p className="text-sm text-slate-500 mt-1">

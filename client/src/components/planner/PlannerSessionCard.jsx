@@ -110,7 +110,7 @@ export const PlannerSessionCard = ({
 
                 {session.task_source === 'RECOMMENDATION' && (
                   <span className="text-[10px] font-semibold bg-violet-50 text-violet-700 border border-violet-200 px-1.5 py-0.5 rounded">
-                    Phase 10 Rec
+                    Smart Rec
                   </span>
                 )}
                 {session.task_source === 'MANUAL' && (

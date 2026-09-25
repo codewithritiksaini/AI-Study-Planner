@@ -59,7 +59,7 @@ export const Analytics = () => {
         subtitle="Data-driven progress tracking, plan adherence, quiz mastery, and actionable insights."
         badge={
           <Badge variant="primary" size="sm">
-            Phase 9 Active
+            Academic Analytics
           </Badge>
         }
         actions={

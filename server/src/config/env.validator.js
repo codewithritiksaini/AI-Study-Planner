@@ -40,6 +40,9 @@ export function validateEnvironment(rawEnv = process.env) {
     if (validated.SUPABASE_URL.includes('placeholder') || validated.SUPABASE_URL.includes('localhost')) {
       throw new Error('❌ [SECURITY ERROR] Production cannot use localhost or placeholder for SUPABASE_URL');
     }
+    if (validated.GEMINI_API_KEY.includes('placeholder') || validated.GEMINI_API_KEY.includes('your-api-key') || validated.GEMINI_API_KEY === 'dummy') {
+      throw new Error('❌ [SECURITY ERROR] Production cannot use placeholder for GEMINI_API_KEY');
+    }
   }
 
   return validated;

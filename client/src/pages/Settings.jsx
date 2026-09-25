@@ -11,7 +11,7 @@ export const Settings = () => {
       <PageHeader
         title="Application Settings"
         subtitle="Configure study slot preferences, notifications, and application behavior."
-        badge={<Badge variant="primary">Phase 1 Preview</Badge>}
+        badge={<Badge variant="primary">Preferences</Badge>}
       />
 
       <div className="max-w-3xl mx-auto space-y-6">

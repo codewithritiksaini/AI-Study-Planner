@@ -232,7 +232,7 @@ export const Study = () => {
       <PageHeader
         title="Focus Mode & Live Study Room"
         subtitle="Record verified study activity, maintain single-task focus, and track academic velocity."
-        badge={<Badge variant="primary">Phase 4 Active</Badge>}
+        badge={<Badge variant="primary">Live Focus Session</Badge>}
       />
 
       {/* Error Alert Banner */}

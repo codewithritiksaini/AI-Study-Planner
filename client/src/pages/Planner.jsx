@@ -316,7 +316,7 @@ export const Planner = () => {
       <PageHeader
         title="Intelligent Adaptive Study Planner"
         subtitle="Time-aware study schedule synthesized from your availability windows, exam urgencies, and mastery recommendations."
-        badge={<Badge variant="primary">Phase 11 Scheduling Engine</Badge>}
+        badge={<Badge variant="primary">Adaptive Scheduling Engine</Badge>}
         action={
           <div className="flex items-center gap-2">
             <Button
