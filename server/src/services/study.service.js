@@ -1,4 +1,5 @@
 import { query } from '../config/db.js';
+import { appCache } from '../utils/cache.js';
 
 export class StudyService {
   /**
@@ -77,6 +78,7 @@ export class StudyService {
     );
 
     const sessionId = insertRes.rows[0].id;
+    appCache.invalidateUser(userId);
     return await this.getSessionById(sessionId, userId);
   }
 
@@ -166,6 +168,7 @@ export class StudyService {
       ]
     );
 
+    appCache.invalidateUser(userId);
     return await this.getSessionById(sessionId, userId);
   }
 
@@ -206,6 +209,7 @@ export class StudyService {
       [sessionId, userId]
     );
 
+    appCache.invalidateUser(userId);
     return await this.getSessionById(sessionId, userId);
   }
 

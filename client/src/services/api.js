@@ -4,7 +4,7 @@ import { supabase } from './supabase.js';
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
-  timeout: 10000,
+  timeout: 45000,
   headers: {
     'Content-Type': 'application/json'
   }
@@ -56,5 +56,74 @@ api.interceptors.response.use(
     return Promise.reject(errorResponse);
   }
 );
+
+// High-speed client cache & in-flight request deduplicator
+const clientCache = new Map();
+const inFlightRequests = new Map();
+
+export const clearApiCache = () => {
+  clientCache.clear();
+};
+
+const originalGet = api.get.bind(api);
+const originalPost = api.post.bind(api);
+const originalPut = api.put.bind(api);
+const originalPatch = api.patch.bind(api);
+const originalDelete = api.delete.bind(api);
+
+api.get = async (url, config = {}) => {
+  if (config.skipCache) {
+    return originalGet(url, config);
+  }
+
+  const cacheKey = `${url}?${JSON.stringify(config.params || {})}`;
+  const cached = clientCache.get(cacheKey);
+
+  if (cached && Date.now() < cached.expiresAt) {
+    return cached.data;
+  }
+
+  if (inFlightRequests.has(cacheKey)) {
+    return inFlightRequests.get(cacheKey);
+  }
+
+  const promise = (async () => {
+    try {
+      const data = await originalGet(url, config);
+      // Cache read queries for 15 seconds in memory
+      clientCache.set(cacheKey, {
+        data,
+        expiresAt: Date.now() + (config.cacheTtlMs || 15000)
+      });
+      return data;
+    } finally {
+      inFlightRequests.delete(cacheKey);
+    }
+  })();
+
+  inFlightRequests.set(cacheKey, promise);
+  return promise;
+};
+
+// Automatically invalidate cached reads upon any mutation
+api.post = async (...args) => {
+  clearApiCache();
+  return originalPost(...args);
+};
+
+api.put = async (...args) => {
+  clearApiCache();
+  return originalPut(...args);
+};
+
+api.patch = async (...args) => {
+  clearApiCache();
+  return originalPatch(...args);
+};
+
+api.delete = async (...args) => {
+  clearApiCache();
+  return originalDelete(...args);
+};
 
 export default api;

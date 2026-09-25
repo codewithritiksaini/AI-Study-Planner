@@ -7,6 +7,7 @@
  */
 
 import { query } from '../../config/db.js';
+import { appCache } from '../../utils/cache.js';
 import {
   calculateStudyMetrics,
   calculatePlannerMetrics,
@@ -141,41 +142,44 @@ class AnalyticsService {
    * High-performance single aggregation endpoint for initial dashboard load.
    */
   async getOverview({ userId, days = 30 }) {
-    const { timezone, todayStr } = await this.getStudentContext(userId);
-    const raw = await this.fetchRawData(userId, days, timezone, todayStr);
+    const cacheKey = `user:${userId}:analytics:overview:${days}`;
+    return appCache.getOrSet(cacheKey, async () => {
+      const { timezone, todayStr } = await this.getStudentContext(userId);
+      const raw = await this.fetchRawData(userId, days, timezone, todayStr);
 
-    // 1. Calculate pure statistical metrics
-    const studyMetrics = calculateStudyMetrics(raw.studySessions, raw.safeDays, timezone, todayStr);
-    const plannerMetrics = calculatePlannerMetrics(raw.studyPlans, raw.studySessions, raw.safeDays, timezone, todayStr);
-    const quizMetrics = calculateQuizMetrics(raw.quizAttempts, timezone);
-    const completionMetrics = calculateCompletionMetrics(raw.topics, raw.subjects, timezone, todayStr);
+      // 1. Calculate pure statistical metrics
+      const studyMetrics = calculateStudyMetrics(raw.studySessions, raw.safeDays, timezone, todayStr);
+      const plannerMetrics = calculatePlannerMetrics(raw.studyPlans, raw.studySessions, raw.safeDays, timezone, todayStr);
+      const quizMetrics = calculateQuizMetrics(raw.quizAttempts, timezone);
+      const completionMetrics = calculateCompletionMetrics(raw.topics, raw.subjects, timezone, todayStr);
 
-    // 2. Evaluate deterministic educational insights
-    const insights = generateInsights({
-      studyMetrics,
-      plannerMetrics,
-      quizMetrics,
-      completionMetrics,
-      topicPerformances: raw.topicPerformances,
-      subjects: raw.subjects,
-      studySessions: raw.studySessions,
-      referenceDate: todayStr
-    });
+      // 2. Evaluate deterministic educational insights
+      const insights = generateInsights({
+        studyMetrics,
+        plannerMetrics,
+        quizMetrics,
+        completionMetrics,
+        topicPerformances: raw.topicPerformances,
+        subjects: raw.subjects,
+        studySessions: raw.studySessions,
+        referenceDate: todayStr
+      });
 
-    return {
-      period: {
-        days: raw.safeDays,
-        start_date: raw.startDateStr,
-        end_date: todayStr
-      },
-      study: studyMetrics,
-      planner: plannerMetrics,
-      quiz: quizMetrics,
-      academic: completionMetrics,
-      subjects: completionMetrics.subjects,
-      topics: raw.topics,
-      insights
-    };
+      return {
+        period: {
+          days: raw.safeDays,
+          start_date: raw.startDateStr,
+          end_date: todayStr
+        },
+        study: studyMetrics,
+        planner: plannerMetrics,
+        quiz: quizMetrics,
+        academic: completionMetrics,
+        subjects: completionMetrics.subjects,
+        topics: raw.topics,
+        insights
+      };
+    }, 45);
   }
 
   /**

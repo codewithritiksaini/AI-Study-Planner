@@ -6,12 +6,14 @@ export const Button = ({
   variant = 'primary',
   size = 'md',
   isLoading = false,
+  loading = false,
   disabled = false,
   className = '',
   icon: Icon,
   type = 'button',
   ...props
 }) => {
+  const isButtonLoading = Boolean(isLoading || loading);
   const baseStyles = 'inline-flex items-center justify-center font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 rounded-lg cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed';
 
   const variants = {
@@ -31,11 +33,11 @@ export const Button = ({
   return (
     <button
       type={type}
-      disabled={disabled || isLoading}
+      disabled={disabled || isButtonLoading}
       className={`${baseStyles} ${variants[variant] || variants.primary} ${sizes[size] || sizes.md} ${className}`}
       {...props}
     >
-      {isLoading ? (
+      {isButtonLoading ? (
         <Loader2 className="w-4 h-4 animate-spin" />
       ) : Icon ? (
         <Icon className="w-4 h-4" />

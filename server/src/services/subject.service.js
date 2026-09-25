@@ -1,4 +1,5 @@
 import { query } from '../config/db.js';
+import { appCache } from '../utils/cache.js';
 
 export class SubjectService {
   /**
@@ -6,36 +7,39 @@ export class SubjectService {
    * along with aggregated topic metrics and calculated syllabus progress.
    */
   async getSubjectsByUserId(userId) {
-    const text = `
-      SELECT
-        s.id,
-        s.user_id,
-        s.name,
-        s.description,
-        s.exam_date,
-        s.target_score,
-        s.color,
-        s.icon,
-        s.created_at,
-        s.updated_at,
-        COUNT(t.id)::int AS topic_count,
-        COUNT(CASE WHEN t.status = 'COMPLETED' OR t.completion_percentage = 100 THEN 1 END)::int AS completed_topic_count,
-        ROUND(COALESCE(AVG(t.completion_percentage), 0), 1)::float AS syllabus_progress_percentage,
-        CASE
-          WHEN s.exam_date IS NOT NULL THEN (s.exam_date - CURRENT_DATE)::int
-          ELSE NULL
-        END AS days_until_exam
-      FROM public.subjects s
-      LEFT JOIN public.topics t ON t.subject_id = s.id
-      WHERE s.user_id = $1
-      GROUP BY s.id
-      ORDER BY
-        CASE WHEN s.exam_date IS NOT NULL AND s.exam_date >= CURRENT_DATE THEN 0 ELSE 1 END ASC,
-        s.exam_date ASC NULLS LAST,
-        s.created_at DESC;
-    `;
-    const res = await query(text, [userId]);
-    return res.rows;
+    const cacheKey = `user:${userId}:subjects:list`;
+    return appCache.getOrSet(cacheKey, async () => {
+      const text = `
+        SELECT
+          s.id,
+          s.user_id,
+          s.name,
+          s.description,
+          s.exam_date,
+          s.target_score,
+          s.color,
+          s.icon,
+          s.created_at,
+          s.updated_at,
+          COUNT(t.id)::int AS topic_count,
+          COUNT(CASE WHEN t.status = 'COMPLETED' OR t.completion_percentage = 100 THEN 1 END)::int AS completed_topic_count,
+          ROUND(COALESCE(AVG(t.completion_percentage), 0), 1)::float AS syllabus_progress_percentage,
+          CASE
+            WHEN s.exam_date IS NOT NULL THEN (s.exam_date - CURRENT_DATE)::int
+            ELSE NULL
+          END AS days_until_exam
+        FROM public.subjects s
+        LEFT JOIN public.topics t ON t.subject_id = s.id
+        WHERE s.user_id = $1
+        GROUP BY s.id
+        ORDER BY
+          CASE WHEN s.exam_date IS NOT NULL AND s.exam_date >= CURRENT_DATE THEN 0 ELSE 1 END ASC,
+          s.exam_date ASC NULLS LAST,
+          s.created_at DESC;
+      `;
+      const res = await query(text, [userId]);
+      return res.rows;
+    }, 60);
   }
 
   /**
@@ -66,12 +70,6 @@ export class SubjectService {
       WHERE s.id = $1 AND s.user_id = $2
       GROUP BY s.id;
     `;
-    const subjectRes = await query(subjectText, [subjectId, userId]);
-    const subject = subjectRes.rows[0];
-
-    if (!subject) {
-      return null;
-    }
 
     const topicsText = `
       SELECT
@@ -86,17 +84,26 @@ export class SubjectService {
         t.created_at,
         t.updated_at,
         tp.performance_level,
-        tp.composite_score,
-        tp.attempt_count,
-        tp.last_assessed_at
+        COALESCE(tp.confidence_score, 0)::float AS composite_score,
+        COALESCE(tp.attempt_count, 0)::int AS attempt_count,
+        tp.last_attempted_at AS last_assessed_at
       FROM public.topics t
       LEFT JOIN public.topic_performance tp ON tp.topic_id = t.id AND tp.user_id = $2
       WHERE t.subject_id = $1
       ORDER BY t.created_at ASC;
     `;
-    const topicsRes = await query(topicsText, [subjectId, userId]);
-    subject.topics = topicsRes.rows;
 
+    const [subjectRes, topicsRes] = await Promise.all([
+      query(subjectText, [subjectId, userId]),
+      query(topicsText, [subjectId, userId])
+    ]);
+    const subject = subjectRes.rows[0];
+
+    if (!subject) {
+      return null;
+    }
+
+    subject.topics = topicsRes.rows;
     return subject;
   }
 
@@ -128,6 +135,7 @@ export class SubjectService {
     ];
 
     const res = await query(text, values);
+    appCache.invalidateUser(userId);
     return res.rows[0];
   }
 
@@ -162,6 +170,7 @@ export class SubjectService {
     `;
 
     const res = await query(text, values);
+    appCache.invalidateUser(userId);
     return res.rows[0] || null;
   }
 
@@ -175,59 +184,65 @@ export class SubjectService {
       RETURNING id, name;
     `;
     const res = await query(text, [subjectId, userId]);
+    appCache.invalidateUser(userId);
     return res.rows[0] || null;
   }
 
   /**
    * Computes aggregated academic metrics for the student's dashboard.
+   * Fully parallelized and cached for maximum responsiveness.
    */
   async getDashboardSummary(userId) {
-    // 1. Total subjects count
-    const subjectsCountRes = await query(
-      `SELECT COUNT(*)::int AS total FROM public.subjects WHERE user_id = $1;`,
-      [userId]
-    );
-    const totalSubjects = subjectsCountRes.rows[0]?.total || 0;
+    const cacheKey = `user:${userId}:dashboard:summary`;
+    return appCache.getOrSet(cacheKey, async () => {
+      const [subjectsCountRes, topicsAggRes, upcomingExamRes] = await Promise.all([
+        // 1. Total subjects count
+        query(
+          `SELECT COUNT(*)::int AS total FROM public.subjects WHERE user_id = $1;`,
+          [userId]
+        ),
+        // 2. Total topics and overall syllabus progress
+        query(
+          `
+          SELECT
+            COUNT(t.id)::int AS total_topics,
+            ROUND(COALESCE(AVG(t.completion_percentage), 0), 1)::float AS overall_syllabus_progress
+          FROM public.topics t
+          JOIN public.subjects s ON s.id = t.subject_id
+          WHERE s.user_id = $1;
+          `,
+          [userId]
+        ),
+        // 3. Nearest upcoming exam
+        query(
+          `
+          SELECT
+            id,
+            name,
+            exam_date,
+            (exam_date - CURRENT_DATE)::int AS days_until_exam,
+            color
+          FROM public.subjects
+          WHERE user_id = $1 AND exam_date IS NOT NULL AND exam_date >= CURRENT_DATE
+          ORDER BY exam_date ASC
+          LIMIT 1;
+          `,
+          [userId]
+        )
+      ]);
 
-    // 2. Total topics and overall syllabus progress
-    const topicsAggRes = await query(
-      `
-      SELECT
-        COUNT(t.id)::int AS total_topics,
-        ROUND(COALESCE(AVG(t.completion_percentage), 0), 1)::float AS overall_syllabus_progress
-      FROM public.topics t
-      JOIN public.subjects s ON s.id = t.subject_id
-      WHERE s.user_id = $1;
-      `,
-      [userId]
-    );
-    const totalTopics = topicsAggRes.rows[0]?.total_topics || 0;
-    const overallSyllabusProgress = topicsAggRes.rows[0]?.overall_syllabus_progress || 0;
+      const totalSubjects = subjectsCountRes.rows[0]?.total || 0;
+      const totalTopics = topicsAggRes.rows[0]?.total_topics || 0;
+      const overallSyllabusProgress = topicsAggRes.rows[0]?.overall_syllabus_progress || 0;
+      const upcomingExam = upcomingExamRes.rows[0] || null;
 
-    // 3. Nearest upcoming exam
-    const upcomingExamRes = await query(
-      `
-      SELECT
-        id,
-        name,
-        exam_date,
-        (exam_date - CURRENT_DATE)::int AS days_until_exam,
-        color
-      FROM public.subjects
-      WHERE user_id = $1 AND exam_date IS NOT NULL AND exam_date >= CURRENT_DATE
-      ORDER BY exam_date ASC
-      LIMIT 1;
-      `,
-      [userId]
-    );
-    const upcomingExam = upcomingExamRes.rows[0] || null;
-
-    return {
-      totalSubjects,
-      totalTopics,
-      overallSyllabusProgress,
-      upcomingExam
-    };
+      return {
+        totalSubjects,
+        totalTopics,
+        overallSyllabusProgress,
+        upcomingExam
+      };
+    }, 45);
   }
 }
 

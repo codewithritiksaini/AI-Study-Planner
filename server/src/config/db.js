@@ -25,9 +25,12 @@ export const getDbPool = () => {
       ssl: {
         rejectUnauthorized: false
       },
-      max: 10,
-      idleTimeoutMillis: 10000,
-      connectionTimeoutMillis: 30000
+      min: 4,
+      max: 15,
+      idleTimeoutMillis: 300000,
+      connectionTimeoutMillis: 30000,
+      keepAlive: true,
+      keepAliveInitialDelayMillis: 10000
     });
 
     poolInstance.on('error', (err) => {
@@ -59,4 +62,42 @@ export const query = async (text, params = []) => {
     // safe diagnostic duration
   }
   return res;
+};
+
+let keepAliveTimer = null;
+
+/**
+ * Pre-warms the database connection pool on server boot so the first user
+ * request does not incur cold-start SSL handshake latency.
+ */
+export const warmupDatabasePool = async () => {
+  try {
+    const pool = getDbPool();
+    if (!pool) return;
+    const start = Date.now();
+    await pool.query('SELECT 1;');
+    console.log(`⚡ [DB WARMUP] Database connection pool pre-warmed in ${Date.now() - start}ms`);
+    startDbKeepAlive();
+  } catch (err) {
+    console.warn('⚠️ [DB WARMUP] Initial database warmup failed:', err.message);
+  }
+};
+
+/**
+ * Periodically pings the database every 90 seconds to prevent domestic ISP/NAT
+ * routers and firewalls from dropping idle SSL sockets.
+ */
+export const startDbKeepAlive = (intervalMs = 90000) => {
+  if (keepAliveTimer || env.NODE_ENV === 'test') return;
+  keepAliveTimer = setInterval(async () => {
+    try {
+      const pool = getDbPool();
+      if (pool) {
+        await pool.query('SELECT 1;');
+      }
+    } catch {
+      // Ignore background keepalive error
+    }
+  }, intervalMs);
+  if (keepAliveTimer.unref) keepAliveTimer.unref();
 };

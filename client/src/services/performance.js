@@ -7,7 +7,14 @@ export const performanceService = {
   async getTopicPerformance(subjectId = null) {
     const params = subjectId ? { subject_id: subjectId } : {};
     const response = await api.get('/performance/topics', { params });
-    return response.data?.data || [];
+    return response.data || response || [];
+  },
+
+  /**
+   * Alias for getTopicPerformance() for compatibility with Dashboard & Progress views.
+   */
+  async getAllTopicPerformance() {
+    return this.getTopicPerformance();
   },
 
   /**
@@ -15,7 +22,7 @@ export const performanceService = {
    */
   async getTopicPerformanceById(topicId) {
     const response = await api.get(`/performance/topics/${topicId}`);
-    return response.data?.data || null;
+    return response.data || response || null;
   },
 
   /**
@@ -23,7 +30,7 @@ export const performanceService = {
    */
   async getWeakTopics() {
     const response = await api.get('/performance/weak-topics');
-    return response.data?.data || [];
+    return response.data || response || [];
   },
 
   /**
@@ -31,7 +38,7 @@ export const performanceService = {
    */
   async getStrongTopics() {
     const response = await api.get('/performance/strong-topics');
-    return response.data?.data || [];
+    return response.data || response || [];
   }
 };
 

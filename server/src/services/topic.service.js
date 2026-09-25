@@ -1,4 +1,5 @@
 import { query } from '../config/db.js';
+import { appCache } from '../utils/cache.js';
 
 export class TopicService {
   /**
@@ -125,6 +126,7 @@ export class TopicService {
     ];
 
     const res = await query(text, values);
+    appCache.invalidateUser(userId);
     return res.rows[0];
   }
 
@@ -196,6 +198,7 @@ export class TopicService {
     ];
 
     const res = await query(text, values);
+    appCache.invalidateUser(userId);
     return res.rows[0];
   }
 
@@ -232,6 +235,7 @@ export class TopicService {
       RETURNING id, name, subject_id;
     `;
     const res = await query(text, [topicId]);
+    appCache.invalidateUser(userId);
     return res.rows[0];
   }
 }
