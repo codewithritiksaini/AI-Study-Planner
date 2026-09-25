@@ -8,7 +8,7 @@ export const aiService = {
     const payload = {};
     if (date) payload.date = date;
     const response = await api.post('/ai/recommendation', payload);
-    return response.data?.data || null;
+    return response?.data || response || null;
   },
 
   /**
@@ -18,7 +18,7 @@ export const aiService = {
     const payload = {};
     if (planDate) payload.plan_date = planDate;
     const response = await api.post('/ai/explain-plan', payload);
-    return response.data?.data || null;
+    return response?.data || response || null;
   },
 
   /**
@@ -28,7 +28,7 @@ export const aiService = {
     const payload = {};
     if (planDate) payload.plan_date = planDate;
     const response = await api.post('/ai/explain-adaptive-plan', payload);
-    return response.data?.data || null;
+    return response?.data || response || null;
   },
 
   /**
@@ -36,7 +36,7 @@ export const aiService = {
    */
   async getStudyStrategy(topicId) {
     const response = await api.post('/ai/study-strategy', { topic_id: topicId });
-    return response.data?.data || null;
+    return response?.data || response || null;
   },
 
   /**
@@ -44,7 +44,18 @@ export const aiService = {
    */
   async askAI(message) {
     const response = await api.post('/ai/ask', { message });
-    return response.data?.data || null;
+    return response?.data || response || null;
+  },
+
+  /**
+   * Retrieves intelligent syllabus topic suggestions for a given subject.
+   */
+  async suggestTopics(subjectName, existingTopics = []) {
+    const response = await api.post('/ai/suggest-topics', {
+      subject_name: subjectName,
+      existing_topics: existingTopics
+    });
+    return response?.data?.topics || response?.topics || [];
   }
 };
 

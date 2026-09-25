@@ -346,6 +346,142 @@ class AIService {
       };
     }
   }
+
+  /**
+   * Generates high-yield university syllabus topic suggestions for a given subject name.
+   */
+  async suggestTopicsForSubject(subjectName, existingTopics = []) {
+    const cleanSubject = aiContextService.sanitizeText(subjectName);
+    const existingList = Array.isArray(existingTopics)
+      ? existingTopics.map((t) => aiContextService.sanitizeText(String(t))).filter(Boolean)
+      : [];
+
+    const systemInstruction = `You are a university academic syllabus coordinator and curriculum expert.
+Your job is to recommend 5 to 8 high-yield, foundational, and exam-critical curriculum topics for an undergraduate course named "${cleanSubject}".
+Rules:
+1. Return ONLY valid JSON adhering strictly to the schema.
+2. Exclude any topics that closely match these already existing topics: ${JSON.stringify(existingList)}.
+3. Each topic must have:
+   - "name": string (concise topic title, e.g. "Normalization: 3NF & BCNF")
+   - "difficulty": "EASY" | "MEDIUM" | "HARD"
+   - "estimated_minutes": integer between 30 and 90
+   - "description": concise 1-sentence academic scope description
+4. Output Schema:
+{
+  "topics": [
+    {
+      "name": "Topic Name",
+      "difficulty": "MEDIUM",
+      "estimated_minutes": 45,
+      "description": "Short description"
+    }
+  ]
+}`;
+
+    const promptText = `Suggest 5 to 8 core syllabus topics for the university course: "${cleanSubject}".`;
+
+    try {
+      const aiResponse = await geminiService.generateContent({
+        prompt: promptText,
+        systemInstruction,
+        expectJson: true
+      });
+
+      if (aiResponse && Array.isArray(aiResponse.topics) && aiResponse.topics.length > 0) {
+        const sanitized = aiResponse.topics
+          .filter((t) => t && typeof t.name === 'string' && t.name.trim().length > 0)
+          .map((t) => ({
+            name: t.name.trim().substring(0, 150),
+            difficulty: ['EASY', 'MEDIUM', 'HARD'].includes(t.difficulty) ? t.difficulty : 'MEDIUM',
+            estimated_minutes:
+              Number.isInteger(t.estimated_minutes) && t.estimated_minutes >= 15 && t.estimated_minutes <= 240
+                ? t.estimated_minutes
+                : 60,
+            description: t.description ? String(t.description).trim().substring(0, 500) : ''
+          }));
+
+        if (sanitized.length > 0) {
+          return {
+            topics: sanitized,
+            source: 'GEMINI_AI'
+          };
+        }
+      }
+      throw new Error('AI topics generation returned empty or invalid schema');
+    } catch (err) {
+      console.warn('⚠️ Gemini topic suggestion fallback triggered:', err.message);
+      return {
+        topics: this.getFallbackTopics(cleanSubject, existingList),
+        source: 'FALLBACK_CATALOG'
+      };
+    }
+  }
+
+  /**
+   * Deterministic catalog fallback for topic suggestions when offline.
+   */
+  getFallbackTopics(subjectName, existingList = []) {
+    const lower = subjectName.toLowerCase();
+    const existingSet = new Set(existingList.map((t) => t.toLowerCase().trim()));
+
+    const catalogs = [
+      {
+        keys: ['dbms', 'database', 'sql'],
+        topics: [
+          { name: 'ER Modeling & Relational Schema', difficulty: 'MEDIUM', estimated_minutes: 45, description: 'Entities, attributes, relationships and relational mapping' },
+          { name: 'Normalization: 1NF, 2NF, 3NF & BCNF', difficulty: 'HARD', estimated_minutes: 60, description: 'Functional dependencies, lossless join and dependency preservation' },
+          { name: 'Transaction Management & ACID', difficulty: 'MEDIUM', estimated_minutes: 45, description: 'Atomicity, Consistency, Isolation, Durability and serializability' },
+          { name: 'Concurrency Control & 2PL Locking', difficulty: 'HARD', estimated_minutes: 50, description: 'Lock-based protocols, timestamp ordering and deadlock handling' },
+          { name: 'B+ Tree Indexing & Query Processing', difficulty: 'HARD', estimated_minutes: 50, description: 'Search trees, file organization and query cost estimation' },
+          { name: 'Advanced SQL Joins & Subqueries', difficulty: 'MEDIUM', estimated_minutes: 40, description: 'Aggregations, nested queries and relational algebra' }
+        ]
+      },
+      {
+        keys: ['os', 'operating system'],
+        topics: [
+          { name: 'CPU Scheduling Algorithms', difficulty: 'MEDIUM', estimated_minutes: 45, description: 'FCFS, SJF, Round Robin and Priority scheduling metrics' },
+          { name: 'Process Synchronization & Semaphores', difficulty: 'HARD', estimated_minutes: 60, description: 'Critical section problem, mutex locks and classic IPC problems' },
+          { name: 'Deadlock Avoidance & Banker Algorithm', difficulty: 'HARD', estimated_minutes: 50, description: 'Resource allocation graphs, safety algorithm and prevention' },
+          { name: 'Memory Management: Paging & Segmentation', difficulty: 'MEDIUM', estimated_minutes: 45, description: 'Logical vs physical address space and translation lookaside buffer (TLB)' },
+          { name: 'Virtual Memory & Page Replacement', difficulty: 'HARD', estimated_minutes: 50, description: 'Demand paging, FIFO, LRU and Optimal page replacement' },
+          { name: 'File Systems & Disk Scheduling', difficulty: 'EASY', estimated_minutes: 35, description: 'FCFS, SSTF, SCAN and C-SCAN disk arm mechanics' }
+        ]
+      },
+      {
+        keys: ['network', 'cn', 'computer network'],
+        topics: [
+          { name: 'OSI vs TCP/IP Protocol Architecture', difficulty: 'EASY', estimated_minutes: 35, description: 'Layer responsibilities, encapsulation and protocol data units' },
+          { name: 'IP Addressing & Subnetting (CIDR)', difficulty: 'HARD', estimated_minutes: 50, description: 'Classless routing, subnet masks and network address calculation' },
+          { name: 'TCP Congestion Control & Sliding Window', difficulty: 'HARD', estimated_minutes: 60, description: 'Flow control, sequence numbers, AIMD and slow start' },
+          { name: 'Routing Protocols: OSPF & BGP', difficulty: 'MEDIUM', estimated_minutes: 45, description: 'Distance vector vs link state routing mechanics' },
+          { name: 'DNS, HTTP/HTTPS & Application Layer', difficulty: 'MEDIUM', estimated_minutes: 40, description: 'Name resolution, request/response cycles and TLS handshake' }
+        ]
+      },
+      {
+        keys: ['dsa', 'data structure', 'algorithm'],
+        topics: [
+          { name: 'Binary Search Trees & AVL Trees', difficulty: 'HARD', estimated_minutes: 50, description: 'Self-balancing trees, tree traversals and rotation mechanics' },
+          { name: 'Graph Traversals: BFS & DFS', difficulty: 'MEDIUM', estimated_minutes: 45, description: 'Adjacency list/matrix, connected components and shortest path' },
+          { name: 'Dynamic Programming (0/1 Knapsack)', difficulty: 'HARD', estimated_minutes: 60, description: 'Optimal substructure, overlapping subproblems and memoization' },
+          { name: 'Dijkstra & Minimum Spanning Trees', difficulty: 'HARD', estimated_minutes: 50, description: 'Greedy algorithms, Prim and Kruskal implementations' },
+          { name: 'Sorting & Searching Complexities', difficulty: 'EASY', estimated_minutes: 35, description: 'QuickSort, MergeSort, Binary Search time and space bounds' }
+        ]
+      }
+    ];
+
+    const matched = catalogs.find((c) => c.keys.some((k) => lower.includes(k)));
+    const candidateTopics = matched
+      ? matched.topics
+      : [
+          { name: `${subjectName}: Fundamental Principles`, difficulty: 'MEDIUM', estimated_minutes: 45, description: 'Core definitions, history and essential terminology' },
+          { name: `${subjectName}: Theoretical Foundations`, difficulty: 'HARD', estimated_minutes: 60, description: 'Mathematical models, algorithms and primary frameworks' },
+          { name: `${subjectName}: Practical Problem Solving`, difficulty: 'MEDIUM', estimated_minutes: 45, description: 'Standard numericals, case studies and application scenarios' },
+          { name: `${subjectName}: Advanced Concepts & Systems`, difficulty: 'HARD', estimated_minutes: 60, description: 'Complex architectures, optimizations and edge cases' },
+          { name: `${subjectName}: Comprehensive Exam Review`, difficulty: 'EASY', estimated_minutes: 40, description: 'Summary checklists, formulas and revision notes' }
+        ];
+
+    return candidateTopics.filter((t) => !existingSet.has(t.name.toLowerCase().trim()));
+  }
 }
 
 export const aiService = new AIService();

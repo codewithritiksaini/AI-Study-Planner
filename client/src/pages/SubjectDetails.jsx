@@ -23,6 +23,7 @@ import Badge from '../components/common/Badge.jsx';
 import TopicItem from '../components/topics/TopicItem.jsx';
 import SubjectModal from '../components/subjects/SubjectModal.jsx';
 import TopicModal from '../components/topics/TopicModal.jsx';
+import SuggestedTopicsBar from '../components/topics/SuggestedTopicsBar.jsx';
 import AIStudyStrategyModal from '../components/ai/AIStudyStrategyModal.jsx';
 import DeleteConfirmModal from '../components/common/DeleteConfirmModal.jsx';
 import LoadingSpinner from '../components/common/LoadingSpinner.jsx';
@@ -147,6 +148,54 @@ export const SubjectDetails = () => {
     }
   };
 
+  const handleQuickAddTopic = async (topicData) => {
+    // 1. Instant optimistic update in React state
+    const tempId = `temp-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+    const optimisticTopic = {
+      id: tempId,
+      subject_id: id,
+      name: topicData.name,
+      difficulty: topicData.difficulty || 'MEDIUM',
+      estimated_minutes: topicData.estimated_minutes || 45,
+      description: topicData.description || '',
+      status: 'NOT_STARTED',
+      completion_percentage: 0
+    };
+
+    setSubject((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        topics: [...(prev.topics || []), optimisticTopic]
+      };
+    });
+
+    try {
+      const created = await topicService.createTopic(id, topicData);
+      setSubject((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          topics: (prev.topics || []).map((t) => (t.id === tempId ? created : t))
+        };
+      });
+      // Silent sync in background to update progress percentage
+      fetchSubjectData();
+    } catch (err) {
+      console.error('Failed to add suggested topic:', err);
+      // Rollback on error
+      setSubject((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          topics: (prev.topics || []).filter((t) => t.id !== tempId)
+        };
+      });
+      alert(err.message || 'Could not add suggested topic');
+      throw err;
+    }
+  };
+
   const handleToggleTopicProgress = async (topicId, nextPercentage) => {
     try {
       // Optimistic local update
@@ -237,6 +286,14 @@ export const SubjectDetails = () => {
 
   const renderExamCountdown = () => {
     const days = subject.days_until_exam;
+    const formattedDate = subject.exam_date
+      ? new Date(subject.exam_date).toLocaleDateString(undefined, {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric'
+        })
+      : '';
+
     if (days === null || days === undefined) {
       return (
         <span className="text-slate-500 bg-slate-100 px-3 py-1 rounded-full text-xs font-medium">
@@ -247,7 +304,7 @@ export const SubjectDetails = () => {
     if (days < 0) {
       return (
         <span className="text-slate-600 bg-slate-100 px-3 py-1 rounded-full text-xs font-semibold">
-          Exam Passed ({subject.exam_date})
+          Exam Passed {formattedDate ? `(${formattedDate})` : ''}
         </span>
       );
     }
@@ -261,13 +318,13 @@ export const SubjectDetails = () => {
     if (days <= 7) {
       return (
         <span className="text-amber-800 bg-amber-50 border border-amber-200 px-3 py-1 rounded-full text-xs font-bold">
-          Exam in {days} days ({subject.exam_date})
+          Exam in {days} days {formattedDate ? `(${formattedDate})` : ''}
         </span>
       );
     }
     return (
       <span className="text-indigo-700 bg-indigo-50 border border-indigo-200/80 px-3 py-1 rounded-full text-xs font-semibold">
-        Exam in {days} days ({subject.exam_date})
+        Exam in {days} days {formattedDate ? `(${formattedDate})` : ''}
       </span>
     );
   };
@@ -387,6 +444,13 @@ export const SubjectDetails = () => {
           </div>
         </div>
       </Card>
+
+      {/* Smart Syllabus Suggestions Bar */}
+      <SuggestedTopicsBar
+        subjectName={subject.name}
+        existingTopics={subject.topics || []}
+        onAddTopic={handleQuickAddTopic}
+      />
 
       {/* Syllabus Topics Section */}
       <div className="space-y-4">

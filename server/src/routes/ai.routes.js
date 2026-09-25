@@ -4,7 +4,8 @@ import {
   getRecommendation,
   explainPlan,
   getStudyStrategy,
-  askAI
+  askAI,
+  suggestTopics
 } from '../controllers/ai.controller.js';
 
 const router = Router();
@@ -24,5 +25,8 @@ router.post('/study-strategy', getStudyStrategy);
 
 // 4. Grounded Study Question & Answer
 router.post('/ask', askAI);
+
+// 5. Intelligent Syllabus Topic Suggestions
+router.post('/suggest-topics', suggestTopics);
 
 export default router;

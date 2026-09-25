@@ -22,7 +22,7 @@ export const subjectService = {
    */
   async getDashboardSummary() {
     const response = await api.get('/subjects/summary');
-    return response.data?.data || {
+    return response?.data || response || {
       totalSubjects: 0,
       totalTopics: 0,
       overallSyllabusProgress: 0,

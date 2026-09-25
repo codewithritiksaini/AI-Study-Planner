@@ -27,6 +27,11 @@ const askAISchema = z.object({
     .max(AI_CONFIG.constraints.maxAskMessageLength, `Message cannot exceed ${AI_CONFIG.constraints.maxAskMessageLength} characters`)
 });
 
+const suggestTopicsSchema = z.object({
+  subject_name: z.string({ required_error: 'subject_name is required' }).trim().min(2, 'Subject name must be at least 2 characters').max(150, 'Subject name cannot exceed 150 characters'),
+  existing_topics: z.array(z.string().trim()).optional().default([])
+});
+
 // ==============================================================================
 // CONTROLLER HANDLERS
 // ==============================================================================
@@ -168,6 +173,45 @@ export const askAI = async (req, res, next) => {
 
     const { message } = validation.data;
     const data = await aiService.askAI(req.user.id, message);
+
+    return res.status(200).json({
+      success: true,
+      data
+    });
+  } catch (error) {
+    if (error.statusCode) {
+      return res.status(error.statusCode).json({
+        success: false,
+        error: {
+          code: error.code || 'AI_ERROR',
+          message: error.message
+        }
+      });
+    }
+    next(error);
+  }
+};
+
+/**
+ * Suggests curriculum topics based on subject name.
+ * POST /api/ai/suggest-topics
+ */
+export const suggestTopics = async (req, res, next) => {
+  try {
+    const validation = suggestTopicsSchema.safeParse(req.body);
+    if (!validation.success) {
+      const issue = validation.error.issues[0];
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: issue ? `${issue.path.join('.')}: ${issue.message}` : 'Invalid request payload'
+        }
+      });
+    }
+
+    const { subject_name, existing_topics } = validation.data;
+    const data = await aiService.suggestTopicsForSubject(subject_name, existing_topics);
 
     return res.status(200).json({
       success: true,

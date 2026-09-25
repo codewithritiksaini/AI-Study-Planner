@@ -122,7 +122,7 @@ export class StudyService {
    * Completes an in-progress study session.
    * Calculates validated duration on the server and stores optional reflections.
    */
-  async completeSession(userId, sessionId, { notes = null, confidenceLevel = null, difficultyFeedback = null }) {
+  async completeSession(userId, sessionId, reflection = {}) {
     // 1. Verify session exists and is owned by the user
     const checkRes = await query(
       `SELECT id, status, started_at FROM public.study_sessions WHERE id = $1 AND user_id = $2;`,
@@ -144,6 +144,10 @@ export class StudyService {
       throw error;
     }
 
+    const notes = reflection.notes?.trim() || null;
+    const confidenceLevel = reflection.confidenceLevel ?? reflection.confidence_level ?? null;
+    const difficultyFeedback = reflection.difficultyFeedback ?? reflection.difficulty_feedback ?? null;
+
     // 2. Server-side authoritative duration calculation (minimum 1 minute if completed)
     const updateRes = await query(
       `
@@ -162,9 +166,9 @@ export class StudyService {
       [
         sessionId,
         userId,
-        notes?.trim() || null,
-        confidenceLevel || null,
-        difficultyFeedback || null
+        notes,
+        confidenceLevel,
+        difficultyFeedback
       ]
     );
 

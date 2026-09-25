@@ -11,7 +11,7 @@ export const quizService = {
       difficulty,
       question_count: questionCount
     });
-    return response.data?.data || null;
+    return response?.data || response || null;
   },
 
   /**
@@ -19,7 +19,7 @@ export const quizService = {
    */
   async getQuizzes(filters = {}) {
     const response = await api.get('/quizzes', { params: filters });
-    return response.data?.data || [];
+    return response?.data?.quizzes || response?.data || response || [];
   },
 
   /**
@@ -27,7 +27,7 @@ export const quizService = {
    */
   async getQuizById(quizId) {
     const response = await api.get(`/quizzes/${quizId}`);
-    return response.data?.data || null;
+    return response?.data?.quiz || response?.data || response || null;
   },
 
   /**
@@ -35,7 +35,7 @@ export const quizService = {
    */
   async startAttempt(quizId) {
     const response = await api.post(`/quizzes/${quizId}/start`);
-    return response.data?.data || null;
+    return response?.data?.attempt || response?.data || response || null;
   },
 
   /**
@@ -45,7 +45,7 @@ export const quizService = {
     const response = await api.post(`/quizzes/${quizId}/attempts/${attemptId}/submit`, {
       answers
     });
-    return response.data?.data || null;
+    return response?.data || response || null;
   },
 
   /**
@@ -53,7 +53,7 @@ export const quizService = {
    */
   async getQuizHistory(limit = 20) {
     const response = await api.get('/quizzes/history', { params: { limit } });
-    return response.data?.data || [];
+    return response?.data?.history || response?.data || response || [];
   },
 
   /**
@@ -61,7 +61,7 @@ export const quizService = {
    */
   async getAttemptReview(attemptId) {
     const response = await api.get(`/quizzes/attempts/${attemptId}`);
-    return response.data?.data || null;
+    return response?.data || response || null;
   },
 
   /**
@@ -71,7 +71,7 @@ export const quizService = {
     const response = await api.post(`/quizzes/${quizId}/questions/${questionId}/explain`, {
       selected_answer: selectedAnswer
     });
-    return response.data?.data || null;
+    return response?.data || response || null;
   }
 };
 
