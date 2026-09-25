@@ -21,10 +21,10 @@ export const navigationItems = [
   { label: 'Planner', path: '/planner', icon: Calendar },
   { label: 'Subjects', path: '/subjects', icon: BookOpen },
   { label: 'Study', path: '/study', icon: Timer },
+  { label: 'AI Advisor', path: '/ai', icon: Sparkles, badge: 'Phase 6' },
   { label: 'Quiz', path: '/quiz', icon: HelpCircle },
   { label: 'Progress', path: '/progress', icon: CheckCircle2 },
   { label: 'Analytics', path: '/analytics', icon: BarChart3 },
-  { label: 'AI Tutor', path: '/ai-tutor', icon: Sparkles, badge: 'AI' },
   { label: 'Profile', path: '/profile', icon: User },
   { label: 'Settings', path: '/settings', icon: Settings }
 ];

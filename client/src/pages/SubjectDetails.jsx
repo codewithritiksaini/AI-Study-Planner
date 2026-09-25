@@ -14,12 +14,14 @@ import {
 } from 'lucide-react';
 import { subjectService } from '../services/subjects.js';
 import { topicService } from '../services/topics.js';
+import { aiService } from '../services/ai.js';
 import Button from '../components/common/Button.jsx';
 import Card, { CardContent } from '../components/common/Card.jsx';
 import Badge from '../components/common/Badge.jsx';
 import TopicItem from '../components/topics/TopicItem.jsx';
 import SubjectModal from '../components/subjects/SubjectModal.jsx';
 import TopicModal from '../components/topics/TopicModal.jsx';
+import AIStudyStrategyModal from '../components/ai/AIStudyStrategyModal.jsx';
 import DeleteConfirmModal from '../components/common/DeleteConfirmModal.jsx';
 import LoadingSpinner from '../components/common/LoadingSpinner.jsx';
 import EmptyState from '../components/common/EmptyState.jsx';
@@ -47,6 +49,25 @@ export const SubjectDetails = () => {
   const [isSubmittingTopic, setIsSubmittingTopic] = useState(false);
   const [deletingTopicTarget, setDeletingTopicTarget] = useState(null);
   const [isDeletingTopic, setIsDeletingTopic] = useState(false);
+
+  // Phase 6 AI Strategy modal state
+  const [strategyModalOpen, setStrategyModalOpen] = useState(false);
+  const [strategyData, setStrategyData] = useState(null);
+  const [loadingStrategy, setLoadingStrategy] = useState(false);
+
+  const handleOpenAIStrategy = async (topic) => {
+    setStrategyModalOpen(true);
+    setLoadingStrategy(true);
+    setStrategyData(null);
+    try {
+      const data = await aiService.getStudyStrategy(topic.id);
+      setStrategyData(data);
+    } catch (err) {
+      console.error('Failed to load study strategy:', err);
+    } finally {
+      setLoadingStrategy(false);
+    }
+  };
 
   const fetchSubjectData = useCallback(async () => {
     try {
@@ -422,6 +443,7 @@ export const SubjectDetails = () => {
                 onEdit={handleOpenEditTopicModal}
                 onDelete={(t) => setDeletingTopicTarget(t)}
                 onProgressChange={handleToggleTopicProgress}
+                onGetStrategy={handleOpenAIStrategy}
               />
             ))}
           </div>
@@ -465,6 +487,14 @@ export const SubjectDetails = () => {
         message={`Are you sure you want to delete "${deletingTopicTarget?.name}"?`}
         confirmText="Delete Topic"
         isDeleting={isDeletingTopic}
+      />
+
+      {/* Phase 6 AI Study Strategy Modal */}
+      <AIStudyStrategyModal
+        isOpen={strategyModalOpen}
+        onClose={() => setStrategyModalOpen(false)}
+        strategyData={strategyData}
+        isLoading={loadingStrategy}
       />
     </div>
   );

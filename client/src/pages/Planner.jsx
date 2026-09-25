@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { plannerService } from '../services/planner.js';
 import { studyService } from '../services/study.js';
+import { aiService } from '../services/ai.js';
 import PageHeader from '../components/common/PageHeader.jsx';
 import Card, { CardHeader, CardTitle, CardContent } from '../components/common/Card.jsx';
 import Badge from '../components/common/Badge.jsx';
@@ -21,6 +22,7 @@ import LoadingSpinner from '../components/common/LoadingSpinner.jsx';
 import PlanTaskCard from '../components/planner/PlanTaskCard.jsx';
 import PlanSummaryHeader from '../components/planner/PlanSummaryHeader.jsx';
 import DaySelector from '../components/planner/DaySelector.jsx';
+import AIPlanExplanationModal from '../components/ai/AIPlanExplanationModal.jsx';
 
 export const Planner = () => {
   const navigate = useNavigate();
@@ -34,6 +36,25 @@ export const Planner = () => {
   const [generating, setGenerating] = useState(false);
   const [actionProcessingId, setActionProcessingId] = useState(null);
   const [errorMessage, setErrorMessage] = useState(null);
+
+  // Phase 6 AI Explanation Modal State
+  const [explainModalOpen, setExplainModalOpen] = useState(false);
+  const [explanationData, setExplanationData] = useState(null);
+  const [loadingExplanation, setLoadingExplanation] = useState(false);
+
+  const handleOpenExplainPlan = async () => {
+    setExplainModalOpen(true);
+    setLoadingExplanation(true);
+    setExplanationData(null);
+    try {
+      const data = await aiService.explainPlan(selectedDate);
+      setExplanationData(data);
+    } catch (err) {
+      console.error('Failed to load plan explanation:', err);
+    } finally {
+      setLoadingExplanation(false);
+    }
+  };
 
   // Load Daily or Weekly Plan
   useEffect(() => {
@@ -164,6 +185,17 @@ export const Planner = () => {
         badge={<Badge variant="primary">Phase 5 Engine</Badge>}
         action={
           <div className="flex items-center gap-2">
+            {hasPlans && (
+              <Button
+                icon={Sparkles}
+                variant="outline"
+                size="sm"
+                onClick={handleOpenExplainPlan}
+                className="text-indigo-700 bg-indigo-50/50 hover:bg-indigo-100/70 border-indigo-200"
+              >
+                Why this plan?
+              </Button>
+            )}
             {hasPlans ? (
               <Button
                 icon={RefreshCw}
@@ -340,6 +372,14 @@ export const Planner = () => {
           </p>
         </div>
       )}
+
+      {/* Phase 6 AI Plan Explanation Modal */}
+      <AIPlanExplanationModal
+        isOpen={explainModalOpen}
+        onClose={() => setExplainModalOpen(false)}
+        explanationData={explanationData}
+        isLoading={loadingExplanation}
+      />
     </div>
   );
 };

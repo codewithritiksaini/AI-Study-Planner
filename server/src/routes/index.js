@@ -5,6 +5,7 @@ import subjectRoutes from './subject.routes.js';
 import topicRoutes from './topic.routes.js';
 import studyRoutes from './study.routes.js';
 import plannerRoutes from './planner.routes.js';
+import aiRoutes from './ai.routes.js';
 
 const router = Router();
 
@@ -24,8 +25,10 @@ router.use('/study', studyRoutes);
 // Rule-Based Study Planner routes (Phase 5)
 router.use('/planner', plannerRoutes);
 
+// Gemini AI Advisory & Recommendations (Phase 6)
+router.use('/ai', aiRoutes);
+
 // router.use('/quizzes', quizRoutes);     // Phase 7
 // router.use('/analytics', analyticsRoutes);// Phase 9
-// router.use('/ai', aiRoutes);            // Phase 10
 
 export default router;

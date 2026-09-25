@@ -21,6 +21,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { subjectService } from '../services/subjects.js';
 import { studyService } from '../services/study.js';
 import { plannerService } from '../services/planner.js';
+import { aiService } from '../services/ai.js';
 import PageHeader from '../components/common/PageHeader.jsx';
 import Card, { CardHeader, CardTitle, CardContent } from '../components/common/Card.jsx';
 import Badge from '../components/common/Badge.jsx';
@@ -55,6 +56,22 @@ export const Dashboard = () => {
     available_minutes: 180,
     plans: []
   });
+
+  // Phase 6 AI Recommendation state
+  const [aiAdvice, setAiAdvice] = useState(null);
+  const [loadingAiAdvice, setLoadingAiAdvice] = useState(false);
+
+  const fetchAIAdvice = async () => {
+    try {
+      setLoadingAiAdvice(true);
+      const res = await aiService.getRecommendation();
+      setAiAdvice(res);
+    } catch (err) {
+      console.error('Failed to fetch AI recommendation:', err);
+    } finally {
+      setLoadingAiAdvice(false);
+    }
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -432,23 +449,61 @@ export const Dashboard = () => {
 
         {/* Right Column: AI Advice Card & Weak Topics */}
         <div className="space-y-4">
-          {/* AI Recommendation Card Placeholder */}
-          <Card className="bg-gradient-to-br from-indigo-50/60 to-purple-50/60 border-indigo-100">
+          {/* Real AI Study Recommendation Card (Phase 6) */}
+          <Card className="bg-gradient-to-br from-indigo-50/70 via-white to-purple-50/70 border-indigo-200 shadow-xs">
             <CardHeader className="pb-2">
-              <div className="flex items-center gap-2 text-indigo-700">
-                <Sparkles className="w-4 h-4" />
-                <span className="text-xs font-bold uppercase tracking-wider">AI Insight</span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-indigo-700">
+                  <Sparkles className="w-4 h-4 text-indigo-600" />
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-800">AI Study Advisor</span>
+                </div>
+                {aiAdvice && (
+                  <Badge variant={aiAdvice.source === 'GEMINI_AI' ? 'primary' : 'neutral'} size="sm">
+                    {aiAdvice.source === 'GEMINI_AI' ? 'Gemini AI' : 'Rule Fallback'}
+                  </Badge>
+                )}
               </div>
             </CardHeader>
-            <CardContent className="pt-0">
-              <p className="text-xs text-slate-700 leading-relaxed font-medium">
-                "Profile linked successfully. Once you configure syllabus modules in Phase 3, adaptive revision blocks will populate automatically."
-              </p>
-              <div className="mt-3">
-                <Button size="sm" variant="outline" className="w-full text-xs" onClick={() => navigate('/ai-tutor')}>
-                  Ask AI Tutor
-                </Button>
-              </div>
+            <CardContent className="pt-0 space-y-3">
+              {aiAdvice ? (
+                <div className="space-y-2.5">
+                  <p className="text-xs text-slate-700 leading-relaxed font-medium">
+                    {aiAdvice.summary}
+                  </p>
+                  {aiAdvice.recommendations && aiAdvice.recommendations.length > 0 && (
+                    <div className="p-2.5 rounded-lg bg-indigo-50/60 border border-indigo-100 text-xs">
+                      <span className="font-bold text-slate-900">
+                        {aiAdvice.recommendations[0].topic}
+                      </span>
+                      <p className="text-slate-600 mt-0.5">{aiAdvice.recommendations[0].action}</p>
+                    </div>
+                  )}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-full text-xs"
+                    onClick={() => navigate('/ai')}
+                  >
+                    Open AI Assistant
+                    <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="text-center py-2 space-y-2">
+                  <p className="text-xs text-slate-500 leading-relaxed">
+                    Get personalized topic prioritization and study strategies grounded in your academic progress.
+                  </p>
+                  <Button
+                    size="sm"
+                    variant="primary"
+                    className="w-full text-xs"
+                    onClick={fetchAIAdvice}
+                    disabled={loadingAiAdvice}
+                  >
+                    {loadingAiAdvice ? 'Analyzing curriculum...' : 'Get AI Advice'}
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
 

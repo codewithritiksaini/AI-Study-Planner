@@ -202,8 +202,29 @@ cd server && npm run test:rls:phase4
   * Strict Light Theme UI: Focus Room (`/study`) with precision timestamp timer, post-session reflection modal (1–5 confidence, difficulty feedback, notes), cancel confirmation, cascading selectors, and tab-closure/refresh recovery.
   * Dashboard live integration: real Today's Focus Duration (`Xh Ym`), completed session counter, and active session pulse banner with 1-click timer resume.
   * 100% passing automated test suite (`npm run test:rls:phase4`).
-* [ ] **Phase 5:** Deterministic Priority & Rule-Based Timetable Generator *(Core MVP)*
-* [ ] **Phase 6:** Server-Side Google Gemini AI Gateway Integration
+* [x] **Phase 5 (COMPLETED):** Rule-Based Study Planner & Deterministic Timetable Engine
+  * `study_plans` table: `id`, `user_id` (FK), `subject_id` (FK), `topic_id` (FK), `plan_date`, `start_time`, `end_time`, `planned_minutes`, `priority_score`, `reason`, `status`, `source`, timestamps.
+  * Deterministic multi-factor priority algorithm:
+    $$\text{Priority Score} = 0.40 \cdot \text{Urgency} + 0.30 \cdot \text{CompletionNeed} + 0.15 \cdot \text{Difficulty} + 0.15 \cdot \text{Inactivity}$$
+  * Zero overscheduling guarantee: planned minutes capped by $\min(H_{daily} \cdot 60, \text{windowMinutes})$.
+  * Zero overlap guarantee: sequential scheduling with automatic 10-minute rest intervals after $\ge 50$m study blocks.
+  * Safe Regeneration policy: only regenerates `RULE_ENGINE` `PENDING` / `SKIPPED` tasks; strictly preserves `COMPLETED` and `IN_PROGRESS` plans.
+  * Express REST API with Zod validation (`POST /api/planner/generate`, `GET /api/planner/today`, `GET /api/planner`, `GET /api/planner/week`, `PATCH /api/planner/:id/status`).
+  * Strict Light Theme UI: Interactive timetable (`/planner`) with DaySelector, PlanSummaryHeader, PlanTaskCard, explainable reasons, 1-click "Start Study" linking to Phase 4 focus room, and real Today's Plan section on Dashboard.
+  * 100% passing automated verification suite (`npm run test:planner`).
+* [x] **Phase 6 (COMPLETED):** Gemini AI Advisory & Recommendation Layer
+  * Server-side isolated AI architecture wrapping `@google/genai` (v2.24.0) with centralized model configuration, timeout racing ($15000$ms), and low temperature ($0.2$) for factual grounding.
+  * Zero-crash architectural guarantee: Gemini operates strictly as an advisory layer with automatic fallback to deterministic rule-engine advice (`FALLBACK_RULE_ENGINE`) if offline or rate-limited; core Phase 5 planner is never blocked.
+  * Minimal context extraction service (`ai-context.service.js`) with verified cross-user data isolation, topic ownership enforcement, and prompt injection sanitization.
+  * Versioned prompt builders:
+    * `recommendation_prompt_v1`: High-impact daily focus recommendations.
+    * `explain_plan_prompt_v1`: Transparent student-friendly explanations of rule-based task ordering.
+    * `study_strategy_prompt_v1`: 4-to-6 timed tactical phases (Concept Review, Problem Solving, Active Recall) and pro tips.
+    * `ask_prompt_v1`: Timetable-grounded mentor Q&A with guardrails preventing unauthorized database actions.
+  * Express REST API with Zod validation (`POST /api/ai/recommendation`, `POST /api/ai/explain-plan`, `POST /api/ai/study-strategy`, `POST /api/ai/ask`).
+  * Strict Light Theme UI: Interactive AI Advisor page (`/ai`), on-demand AI Advice card on Dashboard, "Why this plan?" modal on Planner, and "AI Strategy" button on Subject Details topics.
+  * Security verified: `GEMINI_API_KEY` exists strictly on the server and is 100% absent from client bundles, browser network payloads, and Git history.
+  * 100% passing automated test suite (`npm run test:ai`).
 * [ ] **Phase 7:** AI Quiz Generation & Objective Topic Mastery Evaluation
 * [ ] **Phase 8:** Adaptive Replanning & Event-Driven Rescheduling
 * [ ] **Phase 9:** Comprehensive Analytics & Visual Progress Dashboard (Recharts)

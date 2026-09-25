@@ -1,13 +1,14 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle2, Circle, Clock, Edit2, Trash2, Play } from 'lucide-react';
+import { CheckCircle2, Circle, Clock, Edit2, Trash2, Play, Sparkles } from 'lucide-react';
 import Badge from '../common/Badge.jsx';
 
 export const TopicItem = ({
   topic,
   onEdit,
   onDelete,
-  onProgressChange
+  onProgressChange,
+  onGetStrategy
 }) => {
   const navigate = useNavigate();
   const {
@@ -151,6 +152,16 @@ export const TopicItem = ({
           <Play className="w-3 h-3 fill-indigo-600" />
           Study
         </button>
+        {onGetStrategy && (
+          <button
+            onClick={() => onGetStrategy(topic)}
+            className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold text-violet-700 bg-violet-50 hover:bg-violet-100 border border-violet-200/80 transition-colors shadow-2xs mr-1"
+            title="Get AI Study Strategy for this Topic"
+          >
+            <Sparkles className="w-3 h-3 text-violet-600" />
+            AI Strategy
+          </button>
+        )}
         <button
           onClick={() => onEdit(topic)}
           className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"

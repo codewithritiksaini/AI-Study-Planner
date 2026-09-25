@@ -1,0 +1,243 @@
+import { geminiService } from './gemini.service.js';
+import { aiContextService } from './ai-context.service.js';
+import { recommendationPrompt } from '../ai/prompts/recommendation.prompt.js';
+import { explainPlanPrompt } from '../ai/prompts/explainPlan.prompt.js';
+import { studyStrategyPrompt } from '../ai/prompts/studyStrategy.prompt.js';
+import { askPrompt } from '../ai/prompts/ask.prompt.js';
+
+class AIService {
+  /**
+   * Generates a personalized daily study recommendation using Gemini.
+   * If Gemini is unavailable, falls back to a deterministic, rule-based recommendation.
+   */
+  async getStudyRecommendation(userId, dateStr) {
+    const context = await aiContextService.buildRecommendationContext(userId, dateStr);
+
+    // If student has no subjects enrolled
+    if (!context.subjects || context.subjects.length === 0) {
+      return {
+        summary: 'Add your semester subjects and syllabus topics to unlock personalized AI study guidance.',
+        recommendations: [],
+        study_strategy: [
+          'Navigate to the Subjects page.',
+          'Add your enrolled courses and upcoming exam dates.',
+          'Define syllabus modules with difficulty ratings.'
+        ],
+        source: 'FALLBACK_RULE_ENGINE'
+      };
+    }
+
+    try {
+      const promptText = recommendationPrompt.buildPrompt(context);
+      const aiResponse = await geminiService.generateContent({
+        prompt: promptText,
+        systemInstruction: recommendationPrompt.systemInstruction,
+        expectJson: true
+      });
+
+      // Validate required response fields
+      if (aiResponse && aiResponse.summary && Array.isArray(aiResponse.recommendations)) {
+        return {
+          ...aiResponse,
+          source: 'GEMINI_AI',
+          prompt_version: recommendationPrompt.version
+        };
+      }
+      throw new Error('AI response schema validation failed');
+    } catch (err) {
+      console.warn('⚠️  Gemini recommendation unavailable, returning deterministic rule-engine fallback:', err.message);
+      return this.buildRecommendationFallback(context);
+    }
+  }
+
+  /**
+   * Explains why the Phase 5 rule engine generated today's schedule.
+   * Read-only: never modifies the plan.
+   */
+  async explainPlan(userId, dateStr) {
+    const context = await aiContextService.buildExplainPlanContext(userId, dateStr);
+
+    if (!context.scheduled_tasks || context.scheduled_tasks.length === 0) {
+      return {
+        explanation: 'No study tasks are scheduled for this date. Generate a timetable from the Planner page to see an explanation.',
+        key_factors: ['No active study blocks generated yet.'],
+        encouragement: 'Generate a plan whenever you are ready to start studying today!',
+        source: 'FALLBACK_RULE_ENGINE'
+      };
+    }
+
+    try {
+      const promptText = explainPlanPrompt.buildPrompt(context);
+      const aiResponse = await geminiService.generateContent({
+        prompt: promptText,
+        systemInstruction: explainPlanPrompt.systemInstruction,
+        expectJson: true
+      });
+
+      if (aiResponse && aiResponse.explanation && Array.isArray(aiResponse.key_factors)) {
+        return {
+          ...aiResponse,
+          source: 'GEMINI_AI',
+          prompt_version: explainPlanPrompt.version
+        };
+      }
+      throw new Error('Explain plan response schema validation failed');
+    } catch (err) {
+      console.warn('⚠️  Gemini plan explanation unavailable, returning deterministic fallback:', err.message);
+      return this.buildExplainPlanFallback(context);
+    }
+  }
+
+  /**
+   * Generates a step-by-step 45-60 minute study roadmap for a specific topic.
+   */
+  async getStudyStrategy(userId, topicId) {
+    const context = await aiContextService.buildStudyStrategyContext(userId, topicId);
+
+    try {
+      const promptText = studyStrategyPrompt.buildPrompt(context);
+      const aiResponse = await geminiService.generateContent({
+        prompt: promptText,
+        systemInstruction: studyStrategyPrompt.systemInstruction,
+        expectJson: true
+      });
+
+      if (aiResponse && aiResponse.phases && Array.isArray(aiResponse.phases)) {
+        return {
+          ...aiResponse,
+          source: 'GEMINI_AI',
+          prompt_version: studyStrategyPrompt.version
+        };
+      }
+      throw new Error('Study strategy schema validation failed');
+    } catch (err) {
+      console.warn('⚠️  Gemini study strategy unavailable, returning deterministic fallback:', err.message);
+      return this.buildStudyStrategyFallback(context);
+    }
+  }
+
+  /**
+   * Answers a direct student query grounded in their timetable and academic context.
+   */
+  async askAI(userId, userMessage) {
+    const todayStr = new Date().toISOString().split('T')[0];
+    const context = await aiContextService.buildRecommendationContext(userId, todayStr);
+
+    try {
+      const promptText = askPrompt.buildPrompt(userMessage, context);
+      const aiResponse = await geminiService.generateContent({
+        prompt: promptText,
+        systemInstruction: askPrompt.systemInstruction,
+        expectJson: false
+      });
+
+      return {
+        answer: aiResponse,
+        source: 'GEMINI_AI'
+      };
+    } catch (err) {
+      console.warn('⚠️  Gemini ask response unavailable, returning fallback:', err.message);
+      return {
+        answer: 'AI assistance is temporarily unavailable. However, your study timetable and active sessions remain fully functional. Please check your schedule on the Planner page.',
+        source: 'FALLBACK_RULE_ENGINE'
+      };
+    }
+  }
+
+  // ============================================================================
+  // DETERMINISTIC RULE-BASED FALLBACKS (Zero-crash guarantee if Gemini is down)
+  // ============================================================================
+
+  buildRecommendationFallback(context) {
+    const topTask = context.today_plan && context.today_plan.length > 0 ? context.today_plan[0] : null;
+
+    if (topTask) {
+      return {
+        summary: `Based on your rule-based timetable, focus primarily on ${topTask.subject} (${topTask.topic}) today.`,
+        recommendations: [
+          {
+            topic: topTask.topic,
+            subject: topTask.subject,
+            action: `Dedicate ${topTask.planned_minutes} minutes to focused study`,
+            reason: topTask.reason || 'Highest priority based on exam proximity and completion need.'
+          }
+        ],
+        study_strategy: [
+          'Review fundamental lecture notes and textbook definitions.',
+          'Solve 2 to 3 standard practice problems.',
+          'Perform a 5-minute active recall summary before taking a break.'
+        ],
+        source: 'FALLBACK_RULE_ENGINE'
+      };
+    }
+
+    const firstTopic = context.incomplete_topics && context.incomplete_topics.length > 0 ? context.incomplete_topics[0] : null;
+    return {
+      summary: firstTopic
+        ? `Recommend starting with ${firstTopic.subject} — ${firstTopic.name} to advance syllabus coverage.`
+        : 'Review your upcoming exams and generate today’s study plan from the Planner page.',
+      recommendations: firstTopic ? [
+        {
+          topic: firstTopic.name,
+          subject: firstTopic.subject,
+          action: `Study for ${firstTopic.estimated_minutes || 45} minutes`,
+          reason: `Topic is currently ${firstTopic.completion_percentage}% complete.`
+        }
+      ] : [],
+      study_strategy: [
+        'Review core formulas and theoretical concepts.',
+        'Work through sample exercises.',
+        'Record study duration in the Focus Room.'
+      ],
+      source: 'FALLBACK_RULE_ENGINE'
+    };
+  }
+
+  buildExplainPlanFallback(context) {
+    const tasks = context.scheduled_tasks;
+    const top = tasks[0];
+    return {
+      explanation: `Today's schedule allocates ${context.daily_capacity_hours} hours. ${top.subject} (${top.topic}) is placed first with highest priority score (${(top.priority_score * 100).toFixed(0)}%) because ${top.rule_reason.toLowerCase()}.`,
+      key_factors: tasks.map(t => `${t.subject} — ${t.topic}: ${t.rule_reason}`),
+      encouragement: 'Follow today’s timetable sequentially to maximize focus and retention.',
+      source: 'FALLBACK_RULE_ENGINE'
+    };
+  }
+
+  buildStudyStrategyFallback(context) {
+    const duration = context.estimated_minutes || 60;
+    const p1 = Math.round(duration * 0.25);
+    const p2 = Math.round(duration * 0.45);
+    const p3 = duration - p1 - p2;
+
+    return {
+      topic: context.topic,
+      subject: context.subject,
+      recommended_duration_minutes: duration,
+      phases: [
+        {
+          phase_name: 'Concept Priming & Theoretical Foundations',
+          duration_minutes: p1,
+          instruction: 'Skim key definitions, diagrams, and fundamental theorems.'
+        },
+        {
+          phase_name: 'Active Problem Solving & Applied Exercises',
+          duration_minutes: p2,
+          instruction: 'Work through standard university questions and past exam problems.'
+        },
+        {
+          phase_name: 'Active Recall & Self-Testing',
+          duration_minutes: p3,
+          instruction: 'Write out core concepts from memory without looking at reference notes.'
+        }
+      ],
+      pro_tips: [
+        'Break complex derivations into smaller logical steps.',
+        'Use the built-in Focus Room stopwatch to maintain strict focus blocks.'
+      ],
+      source: 'FALLBACK_RULE_ENGINE'
+    };
+  }
+}
+
+export const aiService = new AIService();
