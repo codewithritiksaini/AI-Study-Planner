@@ -22,6 +22,16 @@ export const aiService = {
   },
 
   /**
+   * Explains adaptive multi-factor prioritization signals.
+   */
+  async explainAdaptivePlan(planDate = null) {
+    const payload = {};
+    if (planDate) payload.plan_date = planDate;
+    const response = await api.post('/ai/explain-adaptive-plan', payload);
+    return response.data?.data || null;
+  },
+
+  /**
    * Generates a tactical 45-60 min step-by-step study roadmap for a specific topic.
    */
   async getStudyStrategy(topicId) {

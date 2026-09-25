@@ -1,13 +1,13 @@
 import React from 'react';
-import { Clock, CheckCircle2, Play, SkipForward, AlertCircle } from 'lucide-react';
+import { Clock, CheckCircle2, Play, SkipForward, AlertCircle, Sparkles, Brain, Target, Calendar } from 'lucide-react';
 import Badge from '../common/Badge.jsx';
 import Button from '../common/Button.jsx';
 
 /**
  * PlanTaskCard
- * Clean, high-contrast light theme card representing a planned study block.
+ * Clean, high-contrast light theme card representing a planned adaptive study block.
  * Shows subject, topic, time slot, planned minutes, priority score, explainable reason,
- * status badge, and action triggers.
+ * adaptive signal tags, status badge, and action triggers.
  */
 export const PlanTaskCard = ({
   plan,
@@ -24,13 +24,15 @@ export const PlanTaskCard = ({
     priority_score,
     reason,
     status,
+    source,
+    adaptation_metadata,
     subjects,
     topics
   } = plan;
 
-  const subjectName = subjects?.name || 'Subject';
-  const subjectColor = subjects?.color || '#4f46e5';
-  const topicName = topics?.name || 'Study Topic';
+  const subjectName = subjects?.name || plan.subject_name || 'Subject';
+  const subjectColor = subjects?.color || plan.subject_color || '#4f46e5';
+  const topicName = topics?.name || plan.topic_name || 'Study Topic';
 
   // Format time strings (e.g. 18:00 - 19:00)
   const formatTimeSlot = () => {
@@ -72,6 +74,10 @@ export const PlanTaskCard = ({
   const isCompleted = status === 'COMPLETED';
   const isInProgress = status === 'IN_PROGRESS';
   const isSkipped = status === 'SKIPPED';
+  const isMissed = status === 'MISSED';
+
+  // Extract driving factors from adaptation metadata
+  const drivingFactors = adaptation_metadata?.driving_factors || [];
 
   return (
     <div className={`p-5 rounded-xl border transition-all ${
@@ -79,6 +85,8 @@ export const PlanTaskCard = ({
         ? 'bg-slate-50/70 border-slate-200 opacity-80'
         : isInProgress
         ? 'bg-indigo-50/40 border-indigo-200 shadow-sm'
+        : isMissed
+        ? 'bg-rose-50/30 border-rose-200 shadow-sm'
         : 'bg-white border-slate-200 shadow-sm hover:border-slate-300'
     }`}>
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -86,18 +94,35 @@ export const PlanTaskCard = ({
         <div className="flex items-start gap-3.5 flex-1 min-w-0">
           {/* Color Indicator */}
           <div
-            className="w-2.5 h-12 rounded-full shrink-0 mt-0.5"
+            className="w-2.5 h-14 rounded-full shrink-0 mt-0.5"
             style={{ backgroundColor: subjectColor }}
           />
 
           <div className="flex-1 min-w-0">
-            {/* Subject name & Badges */}
-            <div className="flex flex-wrap items-center gap-2 mb-1">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+            {/* Subject name, Badges & Adaptation chips */}
+            <div className="flex flex-wrap items-center gap-1.5 mb-1.5">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-600 mr-1">
                 {subjectName}
               </span>
               {getPriorityBadge()}
               {getStatusBadge()}
+
+              {/* Adaptation Driving Factor Chips */}
+              {drivingFactors.includes('WEAK_PERFORMANCE') && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                  <Brain className="w-3 h-3" /> Weak Topic
+                </span>
+              )}
+              {drivingFactors.includes('EXAM_APPROACHING') && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                  <Calendar className="w-3 h-3" /> Exam Soon
+                </span>
+              )}
+              {drivingFactors.includes('MISSED_SESSIONS') && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-cyan-50 text-cyan-700 border border-cyan-200">
+                  <Sparkles className="w-3 h-3" /> Recovery
+                </span>
+              )}
             </div>
 
             {/* Topic Title */}
@@ -106,8 +131,8 @@ export const PlanTaskCard = ({
             </h4>
 
             {/* Scheduled Time & Duration */}
-            <div className="flex items-center gap-3 mt-1 text-xs text-slate-600 font-medium">
-              <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-slate-100 text-slate-700">
+            <div className="flex items-center gap-3 mt-1.5 text-xs text-slate-600 font-medium">
+              <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-700 font-mono">
                 <Clock className="w-3.5 h-3.5 text-slate-500" />
                 {formatTimeSlot()}
               </span>
@@ -116,8 +141,8 @@ export const PlanTaskCard = ({
 
             {/* Explainable Deterministic Reason */}
             {reason && (
-              <p className="text-xs text-slate-500 mt-2 italic bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-100">
-                💡 {reason}
+              <p className="text-xs text-slate-600 mt-2.5 bg-slate-50 px-3 py-2 rounded-lg border border-slate-100 leading-relaxed">
+                💡 <span className="font-semibold text-slate-700">Why this task:</span> {reason}
               </p>
             )}
           </div>
@@ -190,6 +215,18 @@ export const PlanTaskCard = ({
             <span className="text-xs font-medium text-slate-400 italic">
               Task Skipped
             </span>
+          )}
+
+          {isMissed && (
+            <Button
+              variant="outline"
+              size="sm"
+              icon={Play}
+              onClick={() => onStart(plan)}
+              disabled={isProcessing}
+            >
+              Catch Up
+            </Button>
           )}
         </div>
       </div>

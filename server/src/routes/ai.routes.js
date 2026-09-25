@@ -15,8 +15,9 @@ router.use(requireAuth);
 // 1. Personalized Daily Recommendation
 router.post('/recommendation', getRecommendation);
 
-// 2. Natural-Language Explanation of Rule-Based Plan
+// 2. Natural-Language Explanation of Study Plan
 router.post('/explain-plan', explainPlan);
+router.post('/explain-adaptive-plan', explainPlan);
 
 // 3. Tactical Topic Study Roadmap
 router.post('/study-strategy', getStudyStrategy);

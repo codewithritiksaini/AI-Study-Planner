@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AlertTriangle, Brain, ArrowRight, CheckCircle2, RefreshCw } from 'lucide-react';
+import { AlertTriangle, Brain, ArrowRight, CheckCircle2, RefreshCw, Calendar, Sparkles } from 'lucide-react';
 import Card, { CardHeader, CardTitle, CardContent } from '../common/Card.jsx';
 import Button from '../common/Button.jsx';
 import PerformanceBadge from './PerformanceBadge.jsx';
@@ -131,6 +131,20 @@ export const WeakTopicsCard = ({
                 <ArrowRight className="w-3.5 h-3.5 ml-1" />
               </Button>
             )}
+
+            <div className="pt-2.5 mt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+              <span className="flex items-center gap-1.5 text-slate-600">
+                <Sparkles className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                Adaptive planner auto-schedules weak topics
+              </span>
+              <button
+                type="button"
+                onClick={() => navigate('/planner')}
+                className="font-semibold text-indigo-600 hover:text-indigo-800 flex items-center gap-0.5 shrink-0"
+              >
+                View Plan <ArrowRight className="w-3 h-3" />
+              </button>
+            </div>
           </div>
         )}
       </CardContent>

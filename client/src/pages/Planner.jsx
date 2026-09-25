@@ -9,19 +9,22 @@ import {
   AlertCircle,
   BookOpen,
   ArrowRight,
-  Plus
+  Brain,
+  ShieldCheck,
+  Zap
 } from 'lucide-react';
 import { plannerService } from '../services/planner.js';
-import { studyService } from '../services/study.js';
 import { aiService } from '../services/ai.js';
 import PageHeader from '../components/common/PageHeader.jsx';
-import Card, { CardHeader, CardTitle, CardContent } from '../components/common/Card.jsx';
+import Card, { CardContent } from '../components/common/Card.jsx';
 import Badge from '../components/common/Badge.jsx';
 import Button from '../components/common/Button.jsx';
 import LoadingSpinner from '../components/common/LoadingSpinner.jsx';
 import PlanTaskCard from '../components/planner/PlanTaskCard.jsx';
 import PlanSummaryHeader from '../components/planner/PlanSummaryHeader.jsx';
 import DaySelector from '../components/planner/DaySelector.jsx';
+import AdaptiveExplainerCard from '../components/planner/AdaptiveExplainerCard.jsx';
+import PlanRegenerationModal from '../components/planner/PlanRegenerationModal.jsx';
 import AIPlanExplanationModal from '../components/ai/AIPlanExplanationModal.jsx';
 
 export const Planner = () => {
@@ -36,8 +39,12 @@ export const Planner = () => {
   const [generating, setGenerating] = useState(false);
   const [actionProcessingId, setActionProcessingId] = useState(null);
   const [errorMessage, setErrorMessage] = useState(null);
+  const [successNotice, setSuccessNotice] = useState(null);
 
-  // Phase 6 AI Explanation Modal State
+  // Safe Recalibration Modal State
+  const [recalibrationModalOpen, setRecalibrationModalOpen] = useState(false);
+
+  // AI Explanation Modal State
   const [explainModalOpen, setExplainModalOpen] = useState(false);
   const [explanationData, setExplanationData] = useState(null);
   const [loadingExplanation, setLoadingExplanation] = useState(false);
@@ -47,74 +54,73 @@ export const Planner = () => {
     setLoadingExplanation(true);
     setExplanationData(null);
     try {
-      const data = await aiService.explainPlan(selectedDate);
+      const data = await plannerService.explainAdaptivePlan(selectedDate);
       setExplanationData(data);
     } catch (err) {
-      console.error('Failed to load plan explanation:', err);
+      console.error('Failed to load adaptive plan explanation:', err);
     } finally {
       setLoadingExplanation(false);
     }
   };
 
   // Load Daily or Weekly Plan
-  useEffect(() => {
-    let isMounted = true;
+  const loadPlannerData = async () => {
+    try {
+      setLoading(true);
+      setErrorMessage(null);
 
-    const loadData = async () => {
-      try {
-        setLoading(true);
-        setErrorMessage(null);
-
-        if (viewMode === 'daily') {
-          const res = await plannerService.getPlanByDate(selectedDate);
-          if (isMounted) setPlanData(res);
-        } else {
-          const res = await plannerService.getWeeklyPlan(selectedDate);
-          if (isMounted) setWeeklyData(res);
-        }
-      } catch (err) {
-        if (isMounted) {
-          console.error('Failed to load planner data:', err);
-          setErrorMessage(err.response?.data?.error?.message || 'Failed to load study plan.');
-        }
-      } finally {
-        if (isMounted) setLoading(false);
+      if (viewMode === 'daily') {
+        const res = await plannerService.getAdaptivePlanByDate(selectedDate);
+        setPlanData(res);
+      } else {
+        const res = await plannerService.getAdaptiveWeek(selectedDate);
+        setWeeklyData(res);
       }
-    };
+    } catch (err) {
+      console.error('Failed to load planner data:', err);
+      setErrorMessage(err.response?.data?.error?.message || 'Failed to load study timetable.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    loadData();
-    return () => {
-      isMounted = false;
-    };
+  useEffect(() => {
+    loadPlannerData();
   }, [selectedDate, viewMode]);
 
-  // Generate or Regenerate Plan
-  const handleGenerate = async (forceRegenerate = false) => {
+  // Generate or Safely Recalibrate Adaptive Plan
+  const handleRecalibratePlan = async () => {
     try {
       setGenerating(true);
       setErrorMessage(null);
-      const res = await plannerService.generatePlan({
-        date: selectedDate,
-        forceRegenerate
+      setSuccessNotice(null);
+
+      const res = await plannerService.generateAdaptivePlan({
+        startDate: selectedDate,
+        days: 7,
+        forceRegenerate: true
       });
-      setPlanData(res);
+
+      setRecalibrationModalOpen(false);
+      setSuccessNotice(`Adaptive plan recalibrated! Scheduled ${res.tasks_created || 0} study blocks across ${res.planning_window?.days || 7} days.`);
+
+      // Reload current day's plan
+      await loadPlannerData();
     } catch (err) {
-      console.error('Plan generation failed:', err);
-      setErrorMessage(err.response?.data?.error?.message || 'Unable to generate study plan.');
+      console.error('Adaptive plan generation failed:', err);
+      setErrorMessage(err.response?.data?.error?.message || 'Unable to recalibrate adaptive study plan.');
     } finally {
       setGenerating(false);
     }
   };
 
-  // 1-Click Start Study Session Integration with Phase 4
+  // 1-Click Start Study Session Integration with Phase 4 Focus Room
   const handleStartTask = async (plan) => {
     try {
       setActionProcessingId(plan.id);
-      // If plan is PENDING, mark IN_PROGRESS
       if (plan.status === 'PENDING') {
         await plannerService.updateStatus(plan.id, 'IN_PROGRESS');
       }
-      // Navigate to Study Focus Room with subject and topic pre-selected
       navigate(`/study?subjectId=${plan.subject_id}&topicId=${plan.topic_id}`);
     } catch (err) {
       console.error('Failed to start planned task:', err);
@@ -124,22 +130,28 @@ export const Planner = () => {
     }
   };
 
-  // Mark Plan Task as COMPLETED
+  // Mark Task as COMPLETED
   const handleCompleteTask = async (planId) => {
     try {
       setActionProcessingId(planId);
       const updated = await plannerService.updateStatus(planId, 'COMPLETED');
-      // Update local state
       setPlanData(prev => {
         if (!prev) return prev;
-        const updatedPlans = prev.plans.map(p => p.id === planId ? updated : p);
-        const completedMins = updatedPlans.filter(p => p.status === 'COMPLETED').reduce((s, p) => s + p.planned_minutes, 0);
-        const pendingMins = updatedPlans.filter(p => p.status === 'PENDING' || p.status === 'IN_PROGRESS').reduce((s, p) => s + p.planned_minutes, 0);
+        const tasksList = prev.tasks || prev.plans || [];
+        const updatedTasks = tasksList.map(p => p.id === planId ? { ...p, ...updated } : p);
+        const completedMins = updatedTasks
+          .filter(p => p.status === 'COMPLETED')
+          .reduce((s, p) => s + (Number(p.planned_minutes) || 0), 0);
+        const pendingMins = updatedTasks
+          .filter(p => p.status === 'PENDING' || p.status === 'IN_PROGRESS')
+          .reduce((s, p) => s + (Number(p.planned_minutes) || 0), 0);
+
         return {
           ...prev,
           completed_minutes: completedMins,
           pending_minutes: pendingMins,
-          plans: updatedPlans
+          tasks: updatedTasks,
+          plans: updatedTasks
         };
       });
     } catch (err) {
@@ -150,19 +162,24 @@ export const Planner = () => {
     }
   };
 
-  // Mark Plan Task as SKIPPED
+  // Mark Task as SKIPPED
   const handleSkipTask = async (planId) => {
     try {
       setActionProcessingId(planId);
       const updated = await plannerService.updateStatus(planId, 'SKIPPED');
       setPlanData(prev => {
         if (!prev) return prev;
-        const updatedPlans = prev.plans.map(p => p.id === planId ? updated : p);
-        const pendingMins = updatedPlans.filter(p => p.status === 'PENDING' || p.status === 'IN_PROGRESS').reduce((s, p) => s + p.planned_minutes, 0);
+        const tasksList = prev.tasks || prev.plans || [];
+        const updatedTasks = tasksList.map(p => p.id === planId ? { ...p, ...updated } : p);
+        const pendingMins = updatedTasks
+          .filter(p => p.status === 'PENDING' || p.status === 'IN_PROGRESS')
+          .reduce((s, p) => s + (Number(p.planned_minutes) || 0), 0);
+
         return {
           ...prev,
           pending_minutes: pendingMins,
-          plans: updatedPlans
+          tasks: updatedTasks,
+          plans: updatedTasks
         };
       });
     } catch (err) {
@@ -173,19 +190,23 @@ export const Planner = () => {
     }
   };
 
-  const plans = planData?.plans || [];
-  const hasPlans = plans.length > 0;
+  const tasks = planData?.tasks || planData?.plans || [];
+  const hasTasks = tasks.length > 0;
+  const capacityMinutes = planData?.capacity_minutes || planData?.available_minutes || 120;
+  const plannedMinutes = planData?.planned_minutes || planData?.total_planned_minutes || 0;
+  const completedMinutes = planData?.completed_minutes || 0;
+  const pendingMinutes = planData?.pending_minutes || 0;
 
   return (
     <div className="space-y-6">
       {/* Page Header */}
       <PageHeader
-        title="Rule-Based Study Planner"
-        subtitle="Deterministic daily and weekly study timetable calculated from exam urgency, syllabus completion, difficulty, and inactivity."
-        badge={<Badge variant="primary">Phase 5 Engine</Badge>}
+        title="Adaptive Study Planner"
+        subtitle="Dynamic study schedule recalibrated from quiz mastery, exam urgency, recent study habits, and missed tasks."
+        badge={<Badge variant="primary">Phase 8 Adaptive Engine</Badge>}
         action={
           <div className="flex items-center gap-2">
-            {hasPlans && (
+            {hasTasks && (
               <Button
                 icon={Sparkles}
                 variant="outline"
@@ -196,27 +217,15 @@ export const Planner = () => {
                 Why this plan?
               </Button>
             )}
-            {hasPlans ? (
-              <Button
-                icon={RefreshCw}
-                variant="outline"
-                size="sm"
-                onClick={() => handleGenerate(true)}
-                disabled={generating}
-              >
-                {generating ? 'Regenerating...' : 'Regenerate Plan'}
-              </Button>
-            ) : (
-              <Button
-                icon={RefreshCw}
-                variant="primary"
-                size="sm"
-                onClick={() => handleGenerate(false)}
-                disabled={generating}
-              >
-                {generating ? 'Generating your study plan...' : "Generate Today's Plan"}
-              </Button>
-            )}
+            <Button
+              icon={RefreshCw}
+              variant={hasTasks ? "outline" : "primary"}
+              size="sm"
+              onClick={() => setRecalibrationModalOpen(true)}
+              disabled={generating}
+            >
+              {generating ? 'Recalibrating...' : (hasTasks ? 'Recalibrate Plan' : 'Generate Adaptive Plan')}
+            </Button>
           </div>
         }
       />
@@ -229,6 +238,22 @@ export const Planner = () => {
         onViewModeChange={setViewMode}
       />
 
+      {/* Success Notification */}
+      {successNotice && (
+        <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-between text-xs text-emerald-900">
+          <div className="flex items-center gap-2.5">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>{successNotice}</span>
+          </div>
+          <button
+            onClick={() => setSuccessNotice(null)}
+            className="text-emerald-700 hover:text-emerald-900 font-semibold ml-4"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
       {/* Error Alert */}
       {errorMessage && (
         <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 flex items-start gap-3">
@@ -240,34 +265,39 @@ export const Planner = () => {
         </div>
       )}
 
+      {/* Transparency Card: How Your Plan Adapts */}
+      <AdaptiveExplainerCard />
+
       {/* Main Content Area */}
       {loading ? (
         <div className="py-20 flex flex-col items-center justify-center">
           <LoadingSpinner size="lg" />
-          <p className="text-xs text-slate-500 font-medium mt-3">Loading study timetable...</p>
+          <p className="text-xs text-slate-500 font-medium mt-3">Recalibrating adaptive schedule...</p>
         </div>
       ) : viewMode === 'daily' ? (
         <div className="space-y-6">
           {/* Daily Metrics Summary Widget */}
           <PlanSummaryHeader
-            totalPlannedMinutes={planData?.total_planned_minutes || 0}
-            completedMinutes={planData?.completed_minutes || 0}
-            pendingMinutes={planData?.pending_minutes || 0}
-            availableMinutes={planData?.available_minutes || 180}
+            totalPlannedMinutes={plannedMinutes}
+            completedMinutes={completedMinutes}
+            pendingMinutes={pendingMinutes}
+            availableMinutes={capacityMinutes}
+            isCapacityAdjusted={planData?.is_capacity_adjusted || false}
+            observedAverage={planData?.observed_average}
           />
 
           {/* Task List or Empty State */}
-          {hasPlans ? (
+          {hasTasks ? (
             <div className="space-y-3">
               <div className="flex items-center justify-between px-1">
                 <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                   <Clock className="w-4 h-4 text-indigo-600" />
-                  Scheduled Study Blocks ({plans.length})
+                  Scheduled Adaptive Blocks ({tasks.length})
                 </h3>
-                <span className="text-xs text-slate-500">Sorted by Priority Index</span>
+                <span className="text-xs text-slate-500 font-medium">Sorted by Multi-Factor Adaptive Index</span>
               </div>
 
-              {plans.map((plan, index) => (
+              {tasks.map((plan, index) => (
                 <React.Fragment key={plan.id}>
                   <PlanTaskCard
                     plan={plan}
@@ -278,7 +308,7 @@ export const Planner = () => {
                   />
 
                   {/* Rest Interval divider between tasks */}
-                  {index < plans.length - 1 && plan.planned_minutes >= 50 && (
+                  {index < tasks.length - 1 && plan.planned_minutes >= 50 && (
                     <div className="flex items-center justify-center gap-2 py-1 text-slate-400 text-xs font-medium">
                       <Clock className="w-3.5 h-3.5" />
                       <span>10-Minute Rest Interval (Automatic Break Insertion)</span>
@@ -293,19 +323,19 @@ export const Planner = () => {
                 <div className="w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-3">
                   <Calendar className="w-7 h-7" />
                 </div>
-                <h3 className="text-base font-bold text-slate-900">No Study Plan for this Date</h3>
+                <h3 className="text-base font-bold text-slate-900">No Study Tasks Scheduled for this Date</h3>
                 <p className="text-sm text-slate-500 max-w-md mt-1 mb-6">
                   {planData?.message ||
-                    'Click Generate to build a deterministic timetable fitted inside your daily study hours.'}
+                    'Click Generate to build an adaptive timetable based on your syllabus, quiz performance, and exam dates.'}
                 </p>
                 <div className="flex items-center gap-3">
                   <Button
                     icon={RefreshCw}
                     variant="primary"
-                    onClick={() => handleGenerate(false)}
+                    onClick={() => setRecalibrationModalOpen(true)}
                     disabled={generating}
                   >
-                    {generating ? 'Generating your study plan...' : "Generate Today's Plan"}
+                    Generate Adaptive Plan
                   </Button>
                   <Button
                     icon={BookOpen}
@@ -328,7 +358,10 @@ export const Planner = () => {
               const dayName = dObj.toLocaleDateString('en-US', { weekday: 'short' });
               const dayNum = dObj.getDate();
               const isCurrentSelected = day.date === selectedDate;
-              const hasDayPlans = day.plans && day.plans.length > 0;
+              const dayTasks = day.tasks || day.plans || [];
+              const hasDayPlans = dayTasks.length > 0;
+              const dayPlannedMins = day.planned_minutes || day.total_planned_minutes || 0;
+              const dayCompletedMins = day.completed_minutes || 0;
 
               return (
                 <div
@@ -350,15 +383,15 @@ export const Planner = () => {
 
                   <div className="space-y-1.5">
                     <p className="text-xs font-bold text-slate-900">
-                      {day.total_planned_minutes > 0 ? `${(day.total_planned_minutes / 60).toFixed(1)}h planned` : 'Rest Day'}
+                      {dayPlannedMins > 0 ? `${(dayPlannedMins / 60).toFixed(1)}h planned` : 'Rest Day'}
                     </p>
                     <p className="text-[11px] text-slate-500">
-                      {hasDayPlans ? `${day.plans.length} task(s)` : 'No tasks'}
+                      {hasDayPlans ? `${dayTasks.length} task(s)` : 'No tasks'}
                     </p>
 
-                    {day.completed_minutes > 0 && (
+                    {dayCompletedMins > 0 && (
                       <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600">
-                        <CheckCircle2 className="w-3 h-3" /> {(day.completed_minutes / 60).toFixed(1)}h done
+                        <CheckCircle2 className="w-3 h-3" /> {(dayCompletedMins / 60).toFixed(1)}h done
                       </span>
                     )}
                   </div>
@@ -373,7 +406,15 @@ export const Planner = () => {
         </div>
       )}
 
-      {/* Phase 6 AI Plan Explanation Modal */}
+      {/* Safe Plan Regeneration Confirmation Modal */}
+      <PlanRegenerationModal
+        isOpen={recalibrationModalOpen}
+        onClose={() => setRecalibrationModalOpen(false)}
+        onConfirm={handleRecalibratePlan}
+        isRegenerating={generating}
+      />
+
+      {/* AI Plan Explanation Modal */}
       <AIPlanExplanationModal
         isOpen={explainModalOpen}
         onClose={() => setExplainModalOpen(false)}

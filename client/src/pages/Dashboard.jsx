@@ -94,7 +94,7 @@ export const Dashboard = () => {
           subjectService.getDashboardSummary(),
           studyService.getActiveSession().catch(() => null),
           studyService.getTodaySessions().catch(() => ({ total_minutes: 0, session_count: 0, sessions: [] })),
-          plannerService.getTodayPlan().catch(() => ({ total_planned_minutes: 0, completed_minutes: 0, pending_minutes: 0, plans: [] })),
+          plannerService.getAdaptiveToday().catch(() => plannerService.getTodayPlan().catch(() => ({ total_planned_minutes: 0, completed_minutes: 0, pending_minutes: 0, tasks: [], plans: [] }))),
           performanceService.getAllTopicPerformance().catch(() => []),
           quizService.getQuizHistory(10).catch(() => [])
         ]);
@@ -419,61 +419,109 @@ export const Dashboard = () => {
               <div className="flex items-center gap-2">
                 <Calendar className="w-5 h-5 text-indigo-600" />
                 <div>
-                  <CardTitle>Today's Planned Study Tasks</CardTitle>
+                  <div className="flex items-center gap-2">
+                    <CardTitle>Today's Planned Study Tasks</CardTitle>
+                    {todayPlan.is_capacity_adjusted && (
+                      <span title="Pace-calibrated capacity from recent study sessions" className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+                        Pace-calibrated
+                      </span>
+                    )}
+                  </div>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    {todayPlan.plans && todayPlan.plans.length > 0
-                      ? `${todayPlan.plans.length} task(s) scheduled (${Math.round(todayPlan.total_planned_minutes / 60 * 10) / 10}h planned)`
+                    {(todayPlan.tasks || todayPlan.plans || []).length > 0
+                      ? `${(todayPlan.tasks || todayPlan.plans || []).length} task(s) scheduled (${Math.round(((todayPlan.planned_minutes || todayPlan.total_planned_minutes || 0) / 60) * 10) / 10}h planned)`
                       : 'No study plan generated yet for today'}
                   </p>
                 </div>
               </div>
               <Button variant="outline" size="sm" onClick={() => navigate('/planner')}>
-                Open Planner
+                Open Adaptive Planner
               </Button>
             </CardHeader>
             <CardContent className="p-4 space-y-3">
-              {todayPlan.plans && todayPlan.plans.length > 0 ? (
-                todayPlan.plans.slice(0, 3).map((plan) => (
-                  <div
-                    key={plan.id}
-                    className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-slate-300 transition-all"
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div
-                        className="w-2.5 h-9 rounded-full shrink-0"
-                        style={{ backgroundColor: plan.subjects?.color || '#4f46e5' }}
-                      />
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold uppercase text-slate-500 truncate">
-                            {plan.subjects?.name}
-                          </span>
-                          <Badge variant={plan.status === 'COMPLETED' ? 'success' : plan.status === 'IN_PROGRESS' ? 'primary' : 'neutral'} size="sm">
-                            {plan.status}
-                          </Badge>
+              {(todayPlan.tasks || todayPlan.plans || []).length > 0 ? (
+                (todayPlan.tasks || todayPlan.plans || []).slice(0, 3).map((plan) => {
+                  const factors = plan.adaptation_metadata?.driving_factors || [];
+                  const isCompleted = plan.status === 'COMPLETED';
+                  const isInProgress = plan.status === 'IN_PROGRESS';
+                  const isMissed = plan.status === 'MISSED';
+
+                  let timeSlotText = `${plan.planned_minutes}m`;
+                  if (plan.start_time && plan.end_time) {
+                    const startStr = new Date(plan.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    const endStr = new Date(plan.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    timeSlotText = `${startStr} - ${endStr}`;
+                  }
+
+                  return (
+                    <div
+                      key={plan.id}
+                      className={`p-3.5 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-all ${
+                        isCompleted
+                          ? 'bg-slate-50/70 border-slate-200 opacity-80'
+                          : isInProgress
+                          ? 'bg-indigo-50/40 border-indigo-200 shadow-xs'
+                          : 'bg-white border-slate-200 hover:border-slate-300 shadow-xs'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div
+                          className="w-2.5 h-10 rounded-full shrink-0"
+                          style={{ backgroundColor: plan.subjects?.color || plan.subject_color || '#4f46e5' }}
+                        />
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-1.5 mb-0.5">
+                            <span className="text-xs font-bold uppercase text-slate-500 truncate">
+                              {plan.subjects?.name || plan.subject_name}
+                            </span>
+                            <Badge variant={isCompleted ? 'success' : isInProgress ? 'primary' : isMissed ? 'danger' : 'neutral'} size="sm">
+                              {plan.status}
+                            </Badge>
+                            {factors.includes('WEAK_PERFORMANCE') && (
+                              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                                <Brain className="w-2.5 h-2.5" /> Weak Topic
+                              </span>
+                            )}
+                            {factors.includes('EXAM_APPROACHING') && (
+                              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                                <Calendar className="w-2.5 h-2.5" /> Exam Soon
+                              </span>
+                            )}
+                            {factors.includes('MISSED_SESSIONS') && (
+                              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[10px] font-bold bg-cyan-50 text-cyan-700 border border-cyan-200">
+                                <Sparkles className="w-2.5 h-2.5" /> Recovery
+                              </span>
+                            )}
+                          </div>
+                          <h5 className="text-sm font-semibold text-slate-900 truncate">
+                            {plan.topics?.name || plan.topic_name}
+                          </h5>
                         </div>
-                        <h5 className="text-sm font-semibold text-slate-900 truncate">
-                          {plan.topics?.name}
-                        </h5>
+                      </div>
+
+                      <div className="flex items-center gap-2.5 shrink-0 self-end sm:self-center">
+                        <span className="flex items-center gap-1 text-xs text-slate-500 font-medium font-mono bg-slate-50 px-2 py-1 rounded border border-slate-100">
+                          <Clock className="w-3 h-3 text-slate-400" />
+                          {timeSlotText}
+                        </span>
+                        {isCompleted ? (
+                          <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
+                            <CheckCircle2 className="w-3.5 h-3.5" /> Done
+                          </span>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant={isInProgress ? 'primary' : 'outline'}
+                            icon={Play}
+                            onClick={() => navigate(`/study?subjectId=${plan.subject_id}&topicId=${plan.topic_id}`)}
+                          >
+                            {isInProgress ? 'Resume' : 'Start'}
+                          </Button>
+                        )}
                       </div>
                     </div>
-
-                    <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
-                      <span className="text-xs text-slate-500 font-medium">
-                        {plan.planned_minutes}m
-                      </span>
-                      {plan.status !== 'COMPLETED' && (
-                        <Button
-                          size="sm"
-                          variant="primary"
-                          onClick={() => navigate(`/study?subjectId=${plan.subject_id}&topicId=${plan.topic_id}`)}
-                        >
-                          Start
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                ))
+                  );
+                })
               ) : (
                 <div className="py-6 text-center text-xs text-slate-500">
                   <p>No study tasks scheduled for today.</p>

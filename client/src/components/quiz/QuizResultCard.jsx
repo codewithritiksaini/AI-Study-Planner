@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   CheckCircle2, 
   XCircle, 
@@ -13,7 +14,8 @@ import {
   ChevronUp,
   AlertTriangle,
   Lightbulb,
-  ExternalLink
+  ExternalLink,
+  Calendar
 } from 'lucide-react';
 import Card, { CardHeader, CardTitle, CardContent } from '../common/Card.jsx';
 import Button from '../common/Button.jsx';
@@ -28,6 +30,7 @@ export const QuizResultCard = ({
   onBackToList,
   className = ''
 }) => {
+  const navigate = useNavigate();
   const [expandedQuestions, setExpandedQuestions] = useState({});
   const [aiExplanations, setAiExplanations] = useState({});
   const [loadingAi, setLoadingAi] = useState({});
@@ -208,6 +211,30 @@ export const QuizResultCard = ({
                 </p>
               </div>
             </div>
+          </div>
+
+          {/* Phase 8 Adaptive Timetable Feedback Prompt */}
+          <div className="mt-5 p-4 rounded-xl bg-indigo-50/70 border border-indigo-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                <Sparkles className="w-4 h-4" />
+              </div>
+              <div>
+                <p className="text-xs font-bold text-indigo-950">Topic Mastery Updated!</p>
+                <p className="text-xs text-indigo-700 mt-0.5">
+                  Recalibrate your study planner to adapt your future study sessions based on this score.
+                </p>
+              </div>
+            </div>
+            <Button
+              size="sm"
+              variant="primary"
+              icon={Calendar}
+              onClick={() => navigate('/planner')}
+              className="shrink-0"
+            >
+              Update Study Plan
+            </Button>
           </div>
 
           {/* Action Row */}

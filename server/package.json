@@ -15,7 +15,10 @@
     "test:ai": "node src/scripts/test_ai.js",
     "test:quiz:eval": "node src/scripts/test_quiz_evaluation.js",
     "test:perf": "node src/scripts/test_performance.js",
-    "test:quiz": "npm run test:quiz:eval && npm run test:perf"
+    "test:quiz": "npm run test:quiz:eval && npm run test:perf",
+    "test:priority:adaptive": "node src/scripts/test_priority_adaptive.js",
+    "test:adaptive": "node src/scripts/test_adaptive_planner.js",
+    "test:adaptive:api": "node src/scripts/test_adaptive_api.js"
   },
   "dependencies": {
     "@google/genai": "^2.24.0",
