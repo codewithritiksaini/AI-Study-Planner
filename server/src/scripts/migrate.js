@@ -45,7 +45,7 @@ async function runMigrations() {
     const checkTables = await client.query(`
       SELECT table_name
       FROM information_schema.tables
-      WHERE table_schema = 'public' AND table_name IN ('profiles', 'subjects', 'topics')
+      WHERE table_schema = 'public' AND table_name IN ('profiles', 'subjects', 'topics', 'study_sessions')
       ORDER BY table_name;
     `);
 
@@ -56,7 +56,7 @@ async function runMigrations() {
     const checkRls = await client.query(`
       SELECT relname as table_name, relrowsecurity as rls_enabled
       FROM pg_class
-      WHERE relname IN ('profiles', 'subjects', 'topics')
+      WHERE relname IN ('profiles', 'subjects', 'topics', 'study_sessions')
       ORDER BY relname;
     `);
     console.log('\n🔒 RLS Status:');
@@ -66,7 +66,7 @@ async function runMigrations() {
     const checkPolicies = await client.query(`
       SELECT tablename, policyname, cmd, roles
       FROM pg_policies
-      WHERE tablename IN ('profiles', 'subjects', 'topics')
+      WHERE tablename IN ('profiles', 'subjects', 'topics', 'study_sessions')
       ORDER BY tablename, cmd;
     `);
     console.log('\n🛡️ Active RLS Policies:');

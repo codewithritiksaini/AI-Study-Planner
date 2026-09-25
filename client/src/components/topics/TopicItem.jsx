@@ -1,5 +1,6 @@
 import React from 'react';
-import { CheckCircle2, Circle, Clock, Edit2, Trash2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { CheckCircle2, Circle, Clock, Edit2, Trash2, Play } from 'lucide-react';
 import Badge from '../common/Badge.jsx';
 
 export const TopicItem = ({
@@ -8,6 +9,7 @@ export const TopicItem = ({
   onDelete,
   onProgressChange
 }) => {
+  const navigate = useNavigate();
   const {
     id,
     name,
@@ -141,6 +143,14 @@ export const TopicItem = ({
 
       {/* Row Action Buttons */}
       <div className="flex items-center justify-end gap-1 mt-3 sm:mt-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 shrink-0">
+        <button
+          onClick={() => navigate(`/study?subjectId=${topic.subject_id}&topicId=${topic.id}`)}
+          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200/80 transition-colors shadow-2xs mr-1"
+          title="Start Study Session on this Topic"
+        >
+          <Play className="w-3 h-3 fill-indigo-600" />
+          Study
+        </button>
         <button
           onClick={() => onEdit(topic)}
           className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"

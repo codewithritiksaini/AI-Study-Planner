@@ -14,10 +14,12 @@ import {
   BookMarked,
   TrendingUp,
   Clock,
-  Plus
+  Plus,
+  CheckCircle2
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { subjectService } from '../services/subjects.js';
+import { studyService } from '../services/study.js';
 import PageHeader from '../components/common/PageHeader.jsx';
 import Card, { CardHeader, CardTitle, CardContent } from '../components/common/Card.jsx';
 import Badge from '../components/common/Badge.jsx';
@@ -36,22 +38,39 @@ export const Dashboard = () => {
   });
   const [loadingSummary, setLoadingSummary] = useState(true);
 
+  // Phase 4 Study Session metrics
+  const [activeSession, setActiveSession] = useState(null);
+  const [todayStudy, setTodayStudy] = useState({
+    total_minutes: 0,
+    session_count: 0,
+    sessions: []
+  });
+
   useEffect(() => {
     let isMounted = true;
-    const loadAcademicSummary = async () => {
+
+    const loadDashboardData = async () => {
       try {
-        const data = await subjectService.getDashboardSummary();
-        if (isMounted && data) {
-          setSummary(data);
+        setLoadingSummary(true);
+        const [academicSummary, activeSess, todayData] = await Promise.all([
+          subjectService.getDashboardSummary(),
+          studyService.getActiveSession().catch(() => null),
+          studyService.getTodaySessions().catch(() => ({ total_minutes: 0, session_count: 0, sessions: [] }))
+        ]);
+
+        if (isMounted) {
+          if (academicSummary) setSummary(academicSummary);
+          if (activeSess) setActiveSession(activeSess);
+          if (todayData) setTodayStudy(todayData);
         }
       } catch (err) {
-        console.error('Failed to load dashboard academic summary:', err);
+        console.error('Failed to load dashboard data:', err);
       } finally {
         if (isMounted) setLoadingSummary(false);
       }
     };
 
-    loadAcademicSummary();
+    loadDashboardData();
     return () => {
       isMounted = false;
     };
@@ -60,18 +79,57 @@ export const Dashboard = () => {
   const studentName = profile?.full_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Student';
   const isProfileComplete = profile && profile.full_name && profile.branch && profile.semester && profile.target_cgpa && profile.daily_available_hours;
 
+  const formatHoursMinutes = (totalMins) => {
+    if (!totalMins || totalMins === 0) return '0h 0m';
+    const h = Math.floor(totalMins / 60);
+    const m = totalMins % 60;
+    return `${h}h ${m}m`;
+  };
+
   return (
     <div>
       <PageHeader
         title={`Welcome back, ${studentName} 👋`}
-        subtitle="Track your academic curriculum, syllabus completion, and exam preparation milestones."
-        badge={<Badge variant="primary">{profile?.branch ? `${profile.branch} • Sem ${profile.semester || 1}` : 'Phase 3 Active'}</Badge>}
+        subtitle="Track your daily study velocity, live focus sessions, and academic preparation milestones."
+        badge={<Badge variant="primary">{profile?.branch ? `${profile.branch} • Sem ${profile.semester || 1}` : 'Phase 4 Active'}</Badge>}
         action={
-          <Button icon={Plus} onClick={() => navigate('/subjects')}>
-            Manage Subjects
+          <Button
+            icon={Play}
+            onClick={() => navigate('/study')}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-xs"
+          >
+            Start Studying
           </Button>
         }
       />
+
+      {/* Active Focus Session Banner (Phase 4 Live Activity) */}
+      {activeSession && (
+        <div className="mb-6 p-4 rounded-2xl bg-emerald-50 border border-emerald-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xs">
+          <div className="flex items-center gap-3.5">
+            <span className="relative flex h-3 w-3 shrink-0">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+            </span>
+            <div>
+              <div className="flex items-center gap-2">
+                <h4 className="text-sm font-bold text-emerald-950">Active Focus Session in Progress</h4>
+                <Badge variant="success" size="sm">Running</Badge>
+              </div>
+              <p className="text-xs text-emerald-800 mt-0.5">
+                Studying <span className="font-bold">{activeSession.subject_name}</span>
+                {activeSession.topic_name && <> &bull; <span className="font-semibold">{activeSession.topic_name}</span></>}
+              </p>
+            </div>
+          </div>
+          <Link to="/study">
+            <Button size="sm" variant="primary" className="bg-emerald-600 hover:bg-emerald-700 text-white whitespace-nowrap shadow-xs">
+              Resume Focus Room
+              <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
+            </Button>
+          </Link>
+        </div>
+      )}
 
       {/* Profile Completeness Alert Banner */}
       {!isProfileComplete && (
@@ -134,8 +192,29 @@ export const Dashboard = () => {
         </div>
       )}
 
-      {/* Metric Cards Row (Real Academic Data from Phase 3) */}
+      {/* Metric Cards Row (Real Study Activity + Academic Metrics) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        {/* Metric 1: Today's Verified Study Time */}
+        <Card hover onClick={() => navigate('/study')} className="cursor-pointer">
+          <CardContent className="p-4 flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+              <Clock className="w-5 h-5" />
+            </div>
+            <div className="flex-1">
+              <p className="text-xs text-slate-500 font-medium">Today's Study Time</p>
+              <div className="flex items-baseline gap-1.5 mt-0.5">
+                <span className="text-2xl font-bold text-slate-900 tabular-nums">
+                  {loadingSummary ? '—' : formatHoursMinutes(todayStudy.total_minutes)}
+                </span>
+                <span className="text-[11px] text-emerald-600 font-medium">
+                  {todayStudy.session_count} {todayStudy.session_count === 1 ? 'session' : 'sessions'}
+                </span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Metric 2: Enrolled Subjects */}
         <Card hover onClick={() => navigate('/subjects')} className="cursor-pointer">
           <CardContent className="p-4 flex items-center gap-3.5">
             <div className="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
@@ -153,26 +232,10 @@ export const Dashboard = () => {
           </CardContent>
         </Card>
 
+        {/* Metric 3: Overall Syllabus Progress */}
         <Card hover onClick={() => navigate('/subjects')} className="cursor-pointer">
           <CardContent className="p-4 flex items-center gap-3.5">
             <div className="w-10 h-10 rounded-lg bg-violet-50 text-violet-600 flex items-center justify-center shrink-0">
-              <BookMarked className="w-5 h-5" />
-            </div>
-            <div className="flex-1">
-              <p className="text-xs text-slate-500 font-medium">Syllabus Topics</p>
-              <div className="flex items-baseline gap-1.5 mt-0.5">
-                <span className="text-2xl font-bold text-slate-900">
-                  {loadingSummary ? '—' : summary.totalTopics}
-                </span>
-                <span className="text-[11px] text-violet-600 font-medium">Topics</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card hover onClick={() => navigate('/subjects')} className="cursor-pointer">
-          <CardContent className="p-4 flex items-center gap-3.5">
-            <div className="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
               <TrendingUp className="w-5 h-5" />
             </div>
             <div className="flex-1">
@@ -181,12 +244,13 @@ export const Dashboard = () => {
                 <span className="text-2xl font-bold text-slate-900">
                   {loadingSummary ? '—' : `${summary.overallSyllabusProgress}%`}
                 </span>
-                <span className="text-[11px] text-emerald-600 font-medium">Completed</span>
+                <span className="text-[11px] text-violet-600 font-medium">Completed</span>
               </div>
             </div>
           </CardContent>
         </Card>
 
+        {/* Metric 4: Next Exam Deadline */}
         <Card hover>
           <CardContent className="p-4 flex items-center gap-3.5">
             <div className="w-10 h-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">

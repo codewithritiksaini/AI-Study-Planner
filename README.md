@@ -175,6 +175,9 @@ cd server && npm run test:rls
 
 # Verify Phase 3 Subject & Topic Hierarchy RLS & Cascade Deletions
 cd server && npm run test:rls:phase3
+
+# Verify Phase 4 Study Session RLS, Single Active Session Rule & History Preservation
+cd server && npm run test:rls:phase4
 ```
 
 ---
@@ -191,7 +194,14 @@ cd server && npm run test:rls:phase3
   * Layered Express backend with Zod validation (`/api/subjects`, `/api/topics`, `/api/subjects/summary`).
   * Strict Light Theme UI: Curriculum list with search (`/subjects`), Subject Details with syllabus checklist & progress velocity (`/subjects/:id`), and live Dashboard metrics integration.
   * 100% passing automated test suite (`npm run test:rls:phase3`).
-* [ ] **Phase 4:** Focus Mode & Live Study Session Stopwatch
+* [x] **Phase 4 (COMPLETED):** Study Session & Activity Tracking
+  * `study_sessions` table: `id`, `user_id` (FK), `subject_id` (FK with historical preservation via `ON DELETE SET NULL`), `topic_id` (FK with historical preservation via `ON DELETE SET NULL`), `started_at`, `ended_at`, `duration_minutes`, `status`, `notes`, `confidence_level`, `difficulty_feedback`, timestamps.
+  * Unbreakable single active session constraint: partial unique index `idx_one_active_session_per_user` on `(user_id) WHERE status = 'IN_PROGRESS'`.
+  * Server-authoritative duration calculation (`ended_at - started_at`) avoiding clock tampering and client timer drift.
+  * Layered Express backend with Zod validation (`POST /api/study/start`, `GET /api/study/active`, `POST /api/study/:id/complete`, `POST /api/study/:id/cancel`, `GET /api/study/today`, `GET /api/study/history`, `GET /api/study/summary`).
+  * Strict Light Theme UI: Focus Room (`/study`) with precision timestamp timer, post-session reflection modal (1–5 confidence, difficulty feedback, notes), cancel confirmation, cascading selectors, and tab-closure/refresh recovery.
+  * Dashboard live integration: real Today's Focus Duration (`Xh Ym`), completed session counter, and active session pulse banner with 1-click timer resume.
+  * 100% passing automated test suite (`npm run test:rls:phase4`).
 * [ ] **Phase 5:** Deterministic Priority & Rule-Based Timetable Generator *(Core MVP)*
 * [ ] **Phase 6:** Server-Side Google Gemini AI Gateway Integration
 * [ ] **Phase 7:** AI Quiz Generation & Objective Topic Mastery Evaluation
