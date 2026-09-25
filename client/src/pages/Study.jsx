@@ -164,6 +164,7 @@ export const Study = () => {
         topicId: selectedTopicId || null
       });
       setActiveSession(session);
+      navigate(`/study/room/${session.id}`);
     } catch (err) {
       console.error('Failed to start study session:', err);
       setActionError(err.response?.data?.error?.message || err.message || 'Could not start study session');
@@ -261,6 +262,28 @@ export const Study = () => {
         </div>
       ) : activeSession ? (
         <div className="space-y-4">
+          <div className="p-5 rounded-2xl bg-indigo-50/80 border border-indigo-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
+            <div className="flex items-center gap-3">
+              <span className="relative flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+              </span>
+              <div>
+                <h4 className="text-sm font-bold text-slate-900">
+                  Focus Session Active: {activeSession.topic_name || activeSession.subject_name}
+                </h4>
+                <p className="text-xs text-slate-500">
+                  Your live stopwatch and AI interactive study guide are open in your dedicated study room.
+                </p>
+              </div>
+            </div>
+            <Link to={`/study/room/${activeSession.id}`}>
+              <Button variant="primary" size="sm" className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold whitespace-nowrap">
+                Open Dedicated Study Room &rarr;
+              </Button>
+            </Link>
+          </div>
+
           <ActiveSessionCard
             session={activeSession}
             onComplete={handleOpenReflection}

@@ -6,7 +6,10 @@ import { studyStrategyPrompt } from '../ai/prompts/studyStrategy.prompt.js';
 import { askPrompt } from '../ai/prompts/ask.prompt.js';
 import { quizGenerationPrompt } from '../ai/prompts/quizGeneration.prompt.js';
 import { quizExplanationPrompt } from '../ai/prompts/quizExplanation.prompt.js';
+import { topicStudyGuidePrompt } from '../ai/prompts/topicStudyGuide.prompt.js';
 import { aiGeneratedQuizSchema } from '../validators/quiz.validator.js';
+import { query } from '../config/db.js';
+import { appCache } from '../utils/cache.js';
 
 class AIService {
   /**
@@ -481,6 +484,226 @@ Rules:
         ];
 
     return candidateTopics.filter((t) => !existingSet.has(t.name.toLowerCase().trim()));
+  }
+
+  /**
+   * Generates or retrieves an interactive, time-calibrated study guide for a topic.
+   * Strictly respects the topic's estimated_minutes budget (40% Concept, 35% Example, 25% Practice).
+   */
+  async getTopicStudyGuide(userId, { topicId, subjectId = null, estimatedMinutes = null }) {
+    // 1. Fetch topic & subject details from Postgres
+    let topicRow = null;
+
+    if (topicId) {
+      const topRes = await query(
+        `
+        SELECT 
+          t.id AS topic_id,
+          t.name AS topic_name,
+          t.difficulty,
+          t.estimated_minutes,
+          s.id AS subject_id,
+          s.name AS subject_name
+        FROM public.topics t
+        JOIN public.subjects s ON s.id = t.subject_id
+        WHERE t.id = $1;
+        `,
+        [topicId]
+      );
+      if (topRes.rows.length > 0) {
+        topicRow = topRes.rows[0];
+      }
+    }
+
+    // If topic is not in DB or custom, fallback to provided arguments or defaults
+    const effectiveSubject = topicRow?.subject_name || 'General Computer Science';
+    const effectiveTopic = topicRow?.topic_name || 'Core Fundamentals';
+    const effectiveDifficulty = topicRow?.difficulty || 'MEDIUM';
+    const effectiveDuration = Math.max(
+      10,
+      Math.min(180, parseInt(estimatedMinutes || topicRow?.estimated_minutes || 25, 10))
+    );
+
+    // 2. Check Cache
+    const cacheKey = `study_guide:${topicId || `${effectiveSubject}_${effectiveTopic}`}:${effectiveDuration}`;
+    const cached = appCache.get(cacheKey);
+    if (cached) {
+      return {
+        ...cached,
+        source: 'CACHE'
+      };
+    }
+
+    const context = {
+      topic_id: topicId || '',
+      topic_name: effectiveTopic,
+      subject_name: effectiveSubject,
+      difficulty: effectiveDifficulty,
+      estimated_minutes: effectiveDuration
+    };
+
+    // 3. Generate via Gemini AI
+    try {
+      const promptText = topicStudyGuidePrompt.buildPrompt(context);
+      const aiResponse = await geminiService.generateContent({
+        prompt: promptText,
+        systemInstruction: topicStudyGuidePrompt.systemInstruction,
+        expectJson: true
+      });
+
+      const hasExamples = (Array.isArray(aiResponse.worked_examples) && aiResponse.worked_examples.length > 0) || aiResponse.worked_example;
+      if (aiResponse && aiResponse.concept && hasExamples && Array.isArray(aiResponse.self_check_questions)) {
+        const normalizedExamples = Array.isArray(aiResponse.worked_examples) && aiResponse.worked_examples.length > 0
+          ? aiResponse.worked_examples
+          : [aiResponse.worked_example];
+
+        const payload = {
+          ...aiResponse,
+          worked_examples: normalizedExamples,
+          worked_example: normalizedExamples[0],
+          topic_id: topicId || '',
+          topic_name: effectiveTopic,
+          subject_name: effectiveSubject,
+          source: 'GEMINI_AI',
+          prompt_version: topicStudyGuidePrompt.version
+        };
+
+        // Store in cache for 24 hours (86400000ms)
+        appCache.set(cacheKey, payload, 86400000);
+        return payload;
+      }
+      throw new Error('AI study guide returned invalid or incomplete schema');
+    } catch (err) {
+      console.warn('⚠️ Gemini study guide generation unavailable, using fallback:', err.message);
+      const fallback = this.buildTopicStudyGuideFallback(context);
+      appCache.set(cacheKey, fallback, 3600000);
+      return fallback;
+    }
+  }
+
+  /**
+   * High-quality deterministic fallback when AI is unavailable or rate-limited.
+   * Tailors content intelligently to the subject and topic domain.
+   */
+  buildTopicStudyGuideFallback(context) {
+    const totalMinutes = context.estimated_minutes || 25;
+    const theoryMinutes = Math.max(4, Math.round(totalMinutes * 0.40));
+    const exampleMinutes = Math.max(3, Math.round(totalMinutes * 0.35));
+    const practiceMinutes = Math.max(3, totalMinutes - theoryMinutes - exampleMinutes);
+
+    const topicLower = (context.topic_name || '').toLowerCase();
+    const subjectLower = (context.subject_name || '').toLowerCase();
+
+    let intuition = `Mastering ${context.topic_name} gives you the exact mental model to reason about state transitions and performance bounds in ${context.subject_name}.`;
+    let codeOrSteps = `// Core implementation pattern for ${context.topic_name}\nfunction processTopic(input) {\n  if (!input) return null;\n  // Step 1: Validate input constraints\n  // Step 2: Traverse / apply transformation\n  // Step 3: Return verified output\n  return true;\n}`;
+    let example2Title = `Edge-Case Verification: ${context.topic_name}`;
+    let example2Code = `// Edge-case & Boundary handling\nif (!input || input.length <= 1) {\n  return handleBaseCase(input);\n}`;
+    let question1 = `What is the primary operational advantage of applying ${context.topic_name}?`;
+    let question2 = `Which condition represents a critical edge case for ${context.topic_name}?`;
+
+    if (topicLower.includes('trie') || topicLower.includes('string')) {
+      intuition = `A Trie trades space for instant prefix matching by sharing common prefixes across words, giving O(L) lookup independent of total dictionary size.`;
+      codeOrSteps = `// Trie Node & Insert Example (JavaScript / TypeScript)\nclass TrieNode {\n  constructor() {\n    this.children = {}; // 26 alphabet branches\n    this.isEndOfWord = false;\n  }\n}\n\nfunction insertWord(root, word) {\n  let curr = root;\n  for (const ch of word) {\n    if (!curr.children[ch]) curr.children[ch] = new TrieNode();\n    curr = curr.children[ch];\n  }\n  curr.isEndOfWord = true;\n}`;
+      example2Title = 'Trie Prefix Search & Autocomplete Example';
+      example2Code = `function startsWith(root, prefix) {\n  let curr = root;\n  for (const ch of prefix) {\n    if (!curr.children[ch]) return false;\n    curr = curr.children[ch];\n  }\n  return true; // Valid prefix exists in Trie\n}`;
+      question1 = 'What is the time complexity of searching for a word of length L in a Trie containing N words?';
+      question2 = 'Why would a Hash Map be preferred over a Trie for exact word lookups without prefix queries?';
+    } else if (topicLower.includes('search') || topicLower.includes('sort')) {
+      intuition = `Searching and sorting algorithms exploit monotonic ordering to cut search spaces exponentially (e.g. Binary Search O(log n)) or reorganize datasets for rapid retrieval.`;
+      codeOrSteps = `// Binary Search in Sorted Array\nfunction binarySearch(arr, target) {\n  let low = 0, high = arr.length - 1;\n  while (low <= high) {\n    const mid = low + Math.floor((high - low) / 2); // Avoid integer overflow\n    if (arr[mid] === target) return mid;\n    if (arr[mid] < target) low = mid + 1;\n    else high = mid - 1;\n  }\n  return -1; // Target not found\n}`;
+      example2Title = 'Binary Search: Finding Lower Bound / First Occurrence';
+      example2Code = `function lowerBound(arr, target) {\n  let low = 0, high = arr.length - 1, ans = -1;\n  while (low <= high) {\n    const mid = low + Math.floor((high - low) / 2);\n    if (arr[mid] >= target) {\n      ans = mid; high = mid - 1; // Try finding smaller index on left\n    } else { low = mid + 1; }\n  }\n  return ans;\n}`;
+      question1 = 'Why is `mid = low + Math.floor((high - low) / 2)` preferred over `(low + high) / 2`?';
+      question2 = 'What is the minimum requirement for Binary Search to guarantee correct results?';
+    } else if (subjectLower.includes('os') || topicLower.includes('cpu') || topicLower.includes('page') || topicLower.includes('deadlock')) {
+      intuition = `Operating System mechanics balance concurrency, memory abstraction, and latency guarantees to provide safe hardware virtualization for user programs.`;
+      codeOrSteps = `// Mutex Lock & Critical Section\nacquire_lock(&mutex); // Atomically test-and-set\n/* --- CRITICAL SECTION --- */\nshared_counter++;\n/* ------------------------ */\nrelease_lock(&mutex); // Wake up waiting threads`;
+      example2Title = 'Deadlock Prevention: Ordered Resource Acquisition';
+      example2Code = `// Always acquire locks in strict numerical order to break circular wait\nif (lockA < lockB) {\n  lock(lockA); lock(lockB);\n} else {\n  lock(lockB); lock(lockA);\n}`;
+      question1 = 'What condition is strictly required to guarantee mutual exclusion in concurrent execution?';
+      question2 = 'Which condition is NOT one of Coffman\'s four conditions for deadlock?';
+    } else if (subjectLower.includes('dbms') || topicLower.includes('sql') || topicLower.includes('normal') || topicLower.includes('acid')) {
+      intuition = `Database systems enforce ACID invariants to guarantee data integrity across crashes, network partitions, and concurrent transactions.`;
+      codeOrSteps = `-- ACID Transaction Block Example\nBEGIN TRANSACTION;\n  UPDATE accounts SET balance = balance - 100 WHERE id = 1;\n  UPDATE accounts SET balance = balance + 100 WHERE id = 2;\nCOMMIT; -- Atomically written to WAL`;
+      example2Title = 'Handling Concurrency: Optimistic Concurrency Control (OCC)';
+      example2Code = `-- Using row versioning to detect concurrent conflicting updates\nUPDATE products\nSET stock = stock - 1, version = version + 1\nWHERE id = 42 AND version = @current_version;\n-- If 0 rows affected, retry transaction due to conflict`;
+      question1 = 'Which ACID property guarantees that intermediate state is invisible to concurrent transactions?';
+      question2 = 'What dependency violation does 2nd Normal Form (2NF) eliminate?';
+    }
+
+    const workedExamples = [
+      {
+        id: 'ex1',
+        title: `Example 1: Standard Execution Flow for ${context.topic_name}`,
+        problem_statement: `Demonstrate primary algorithmic operation and state transitions under representative inputs.`,
+        code_or_steps: codeOrSteps,
+        step_by_step_explanation: [
+          'Step 1: Validate input constraints and initialize state tracking pointers.',
+          'Step 2: Execute state transitions while preserving formal system invariants.',
+          'Step 3: Return the finalized state or target result with bounded complexity.'
+        ]
+      },
+      {
+        id: 'ex2',
+        title: example2Title,
+        problem_statement: `Handle boundary states, concurrency contention, or query optimizations safely.`,
+        code_or_steps: example2Code,
+        step_by_step_explanation: [
+          'Step 1: Inspect the edge or boundary condition before applying the standard pathway.',
+          'Step 2: Apply the safe variant to prevent runtime exceptions or corruption.'
+        ]
+      }
+    ];
+
+    return {
+      topic_id: context.topic_id,
+      topic_name: context.topic_name,
+      subject_name: context.subject_name,
+      time_budget: {
+        total_minutes: totalMinutes,
+        theory_minutes: theoryMinutes,
+        example_minutes: exampleMinutes,
+        practice_minutes: practiceMinutes
+      },
+      concept: {
+        one_liner_intuition: intuition,
+        key_takeaways: [
+          `Key Invariant: Understand the foundational mechanics governing state in ${context.topic_name}.`,
+          `Asymptotic Bounds: Trace best, average, and worst-case execution performance.`,
+          `Edge-Case Verification: Inspect boundary inputs, null checks, and capacity thresholds.`
+        ],
+        explanation_markdown: `### Core Fundamentals of ${context.topic_name}\n\nWhen studying **${context.topic_name}** in **${context.subject_name}**, focus on building an intuitive mental model:\n\n1. **Theoretical Motivation**: Solves scalability, consistency, or performance bottlenecks.\n2. **Execution Flow**: Step-by-step state transitions follow deterministic invariant rules.\n3. **Practical Engineering**: Always balance space requirements with computation latency.`
+      },
+      worked_examples: workedExamples,
+      worked_example: workedExamples[0],
+      self_check_questions: [
+        {
+          id: 'q1',
+          question: question1,
+          options: [
+            'O(L) where L is string/key length, independent of total dataset size',
+            'O(N * L) linear scan through all records',
+            'O(1) without any memory overhead',
+            'O(2^N) exponential time'
+          ],
+          correct_index: 0,
+          explanation: 'Optimal algorithmic representations like Tries and Binary Search isolate search paths to branch depth, bounding time strictly to key length.'
+        },
+        {
+          id: 'q2',
+          question: question2,
+          options: [
+            'Hash maps have O(1) average lookup and do not incur pointer tree overhead when prefixes are not needed',
+            'Hash maps consume strictly zero RAM',
+            'Hash maps automatically sort all elements',
+            'Tries cannot store strings longer than 10 characters'
+          ],
+          correct_index: 0,
+          explanation: 'Hash maps provide faster average single-key lookups without per-node pointer memory overhead when prefix matching is unnecessary.'
+        }
+      ],
+      source: 'SMART_CATALOG_FALLBACK'
+    };
   }
 }
 

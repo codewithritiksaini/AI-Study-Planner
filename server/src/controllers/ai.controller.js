@@ -32,6 +32,12 @@ const suggestTopicsSchema = z.object({
   existing_topics: z.array(z.string().trim()).optional().default([])
 });
 
+const topicStudyGuideSchema = z.object({
+  topic_id: z.string().regex(uuidRegex, 'Invalid topic_id format; must be a valid UUID').optional().nullable(),
+  subject_id: z.string().regex(uuidRegex, 'Invalid subject_id format; must be a valid UUID').optional().nullable(),
+  estimated_minutes: z.number().int().min(5).max(180).optional().nullable()
+});
+
 // ==============================================================================
 // CONTROLLER HANDLERS
 // ==============================================================================
@@ -216,6 +222,49 @@ export const suggestTopics = async (req, res, next) => {
     return res.status(200).json({
       success: true,
       data
+    });
+  } catch (error) {
+    if (error.statusCode) {
+      return res.status(error.statusCode).json({
+        success: false,
+        error: {
+          code: error.code || 'AI_ERROR',
+          message: error.message
+        }
+      });
+    }
+    next(error);
+  }
+};
+
+/**
+ * Generates an interactive, time-budgeted study companion for a topic.
+ * POST /api/ai/topic-guide
+ */
+export const getTopicStudyGuide = async (req, res, next) => {
+  try {
+    const validation = topicStudyGuideSchema.safeParse(req.body);
+    if (!validation.success) {
+      const issue = validation.error.issues[0];
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: issue ? `${issue.path.join('.')}: ${issue.message}` : 'Invalid study guide request parameters'
+        }
+      });
+    }
+
+    const { topic_id, subject_id, estimated_minutes } = validation.data;
+    const guide = await aiService.getTopicStudyGuide(req.user.id, {
+      topicId: topic_id,
+      subjectId: subject_id,
+      estimatedMinutes: estimated_minutes
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: guide
     });
   } catch (error) {
     if (error.statusCode) {

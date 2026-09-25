@@ -1,5 +1,6 @@
 import React from 'react';
-import { Calendar, Clock, BookOpen, Star, HelpCircle, FileText, CheckCircle2, XCircle } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Calendar, Clock, BookOpen, Star, HelpCircle, FileText, CheckCircle2, XCircle, ArrowRight } from 'lucide-react';
 import Badge from '../common/Badge.jsx';
 import EmptyState from '../common/EmptyState.jsx';
 
@@ -58,6 +59,7 @@ export const SessionHistoryTable = ({ sessions = [], loading = false }) => {
               <th className="py-3 px-4 text-center">Status</th>
               <th className="py-3 px-4 text-center">Rating</th>
               <th className="py-3 px-4">Notes</th>
+              <th className="py-3 px-4 text-center">Action</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -77,9 +79,19 @@ export const SessionHistoryTable = ({ sessions = [], loading = false }) => {
                           {s.subject_name || 'Removed Subject'}
                         </p>
                         {s.topic_name && (
-                          <p className="text-[11px] text-slate-500 mt-0.5 line-clamp-1">
-                            {s.topic_name}
-                          </p>
+                          s.topic_id ? (
+                            <Link
+                              to={`/study/review/${s.topic_id}?subjectId=${s.subject_id || ''}&topicName=${encodeURIComponent(s.topic_name)}&subjectName=${encodeURIComponent(s.subject_name || '')}`}
+                              className="text-[11px] text-slate-500 hover:text-indigo-600 hover:underline mt-0.5 line-clamp-1 transition-colors block font-medium"
+                              title="Click to re-read and review this topic"
+                            >
+                              {s.topic_name}
+                            </Link>
+                          ) : (
+                            <p className="text-[11px] text-slate-500 mt-0.5 line-clamp-1">
+                              {s.topic_name}
+                            </p>
+                          )
                         )}
                       </div>
                     </div>
@@ -147,6 +159,22 @@ export const SessionHistoryTable = ({ sessions = [], loading = false }) => {
                       <p className="text-slate-600 text-xs truncate" title={s.notes}>
                         {s.notes}
                       </p>
+                    ) : (
+                      <span className="text-slate-300">—</span>
+                    )}
+                  </td>
+
+                  {/* Action: Re-read & Review */}
+                  <td className="py-3 px-4 text-center">
+                    {s.topic_id ? (
+                      <Link
+                        to={`/study/review/${s.topic_id}?subjectId=${s.subject_id || ''}&topicName=${encodeURIComponent(s.topic_name || '')}&subjectName=${encodeURIComponent(s.subject_name || '')}`}
+                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-[11px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200/80 hover:bg-indigo-100 hover:border-indigo-300 transition-all shadow-2xs whitespace-nowrap"
+                        title="Re-read study guide, code examples & practice questions"
+                      >
+                        <BookOpen className="w-3.5 h-3.5 text-indigo-600" />
+                        <span>Re-read</span>
+                      </Link>
                     ) : (
                       <span className="text-slate-300">—</span>
                     )}

@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { BookOpen, CheckCircle, XCircle, Clock, Tag } from 'lucide-react';
 import StudyTimer from './StudyTimer.jsx';
 import Button from '../common/Button.jsx';
@@ -94,6 +95,16 @@ export const ActiveSessionCard = ({
 
       {/* Action Controls */}
       <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-6 border-t border-slate-100">
+        <Link to={`/study/room/${session.id}`}>
+          <Button
+            variant="secondary"
+            size="lg"
+            className="w-full sm:w-auto px-6 text-indigo-700 bg-indigo-50 border-indigo-200 hover:bg-indigo-100"
+          >
+            Enter Dedicated Study Room &rarr;
+          </Button>
+        </Link>
+
         <Button
           variant="primary"
           size="lg"

@@ -56,7 +56,20 @@ export const aiService = {
       existing_topics: existingTopics
     });
     return response?.data?.topics || response?.topics || [];
+  },
+
+  /**
+   * Generates or retrieves an interactive, time-budgeted study companion for a topic.
+   */
+  async getTopicStudyGuide({ topicId = null, subjectId = null, estimatedMinutes = null } = {}) {
+    const response = await api.post('/ai/topic-guide', {
+      topic_id: topicId || null,
+      subject_id: subjectId || null,
+      estimated_minutes: estimatedMinutes || null
+    });
+    return response?.data || response || null;
   }
 };
 
 export default aiService;
+

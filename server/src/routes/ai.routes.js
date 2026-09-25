@@ -5,7 +5,8 @@ import {
   explainPlan,
   getStudyStrategy,
   askAI,
-  suggestTopics
+  suggestTopics,
+  getTopicStudyGuide
 } from '../controllers/ai.controller.js';
 
 const router = Router();
@@ -28,5 +29,8 @@ router.post('/ask', askAI);
 
 // 5. Intelligent Syllabus Topic Suggestions
 router.post('/suggest-topics', suggestTopics);
+
+// 6. Time-Budgeted Interactive Study Companion
+router.post('/topic-guide', getTopicStudyGuide);
 
 export default router;
