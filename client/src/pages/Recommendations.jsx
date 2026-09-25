@@ -78,11 +78,11 @@ export const Recommendations = () => {
               Study Recommendations
             </h1>
             <Badge variant="purple" size="md" className="font-semibold">
-              Smart Study Engine
+              Smart Study Assistant
             </Badge>
           </div>
           <p className="text-sm text-slate-500 mt-1">
-            Deterministic, capacity-aware study actions ranked by exam urgency, weak topics, and study balance.
+            Personalized, capacity-aware study actions ranked by exam urgency, weak topics, and study balance.
           </p>
         </div>
 
@@ -218,7 +218,7 @@ export const Recommendations = () => {
           {loading ? (
             <div className="py-16 text-center text-slate-400 space-y-3">
               <RefreshCw className="w-8 h-8 animate-spin mx-auto text-indigo-600" />
-              <p className="text-sm font-medium">Evaluating study telemetry and generating actions...</p>
+              <p className="text-sm font-medium">Evaluating your study progress and prioritizing actions...</p>
             </div>
           ) : recommendations.length === 0 ? (
             <Card className="bg-white border-slate-200 text-center py-12 px-4 shadow-xs">

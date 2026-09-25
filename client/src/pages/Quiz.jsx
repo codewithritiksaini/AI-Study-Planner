@@ -240,7 +240,7 @@ export const Quiz = () => {
                 </div>
                 <div>
                   <h3 className="text-sm font-bold text-slate-900">How AI Topic Mastery Works</h3>
-                  <p className="text-xs text-slate-500">Conceptual recall, edge cases & deterministic grading</p>
+                  <p className="text-xs text-slate-500">Conceptual recall, edge cases & instant grading</p>
                 </div>
               </div>
 

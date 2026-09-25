@@ -44,12 +44,6 @@ export const Header = ({ onOpenSidebar, pageTitle }) => {
       </div>
 
       <div className="flex items-center gap-3">
-        {/* System Status Indicator */}
-        <div className="hidden sm:flex items-center gap-2 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-medium">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-          <span>API Connected</span>
-        </div>
-
         {/* User Profile Menu */}
         <div className="relative pl-3 border-l border-slate-200">
           <button

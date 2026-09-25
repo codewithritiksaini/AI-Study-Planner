@@ -195,7 +195,7 @@ export const InsightsPanel = ({ insights = [], days = 30 }) => {
                         Coach Overview
                       </span>
                       <Badge variant="primary" size="sm" className="text-[10px]">
-                        {aiExplanation.source === 'gemini' ? 'Gemini AI' : 'Deterministic Synthesis'}
+                        {aiExplanation.source === 'gemini' ? 'AI Coach' : 'Academic Insights'}
                       </Badge>
                     </div>
                     <p className="leading-relaxed font-medium text-slate-800 text-xs">

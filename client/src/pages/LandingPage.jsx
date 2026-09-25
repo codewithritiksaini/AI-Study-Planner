@@ -119,7 +119,7 @@ export const LandingPage = () => {
               <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-3.5">
                 <Calendar className="w-5 h-5" />
               </div>
-              <h3 className="font-semibold text-slate-900 text-sm">Deterministic Scheduler</h3>
+              <h3 className="font-semibold text-slate-900 text-sm">Adaptive Scheduler</h3>
               <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
                 Slot allocation tailored to your daily available study hours and upcoming exam dates.
               </p>

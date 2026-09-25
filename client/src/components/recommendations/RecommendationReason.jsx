@@ -102,7 +102,7 @@ export const RecommendationReason = ({ recommendation, compact = false }) => {
               size="sm"
               className="text-[10px]"
             >
-              {explanation_source === 'AI_ENHANCED' ? 'Gemini AI' : 'Deterministic'}
+              {explanation_source === 'AI_ENHANCED' ? 'AI Coach' : 'Smart System'}
             </Badge>
           </div>
           <p className="text-xs text-slate-700 leading-relaxed italic">

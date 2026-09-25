@@ -42,7 +42,7 @@ export const PlannerExplanation = ({ explanation }) => {
                 ) : (
                   <>
                     <CheckCircle2 className="h-3 w-3" />
-                    Deterministic
+                    Adaptive Schedule
                   </>
                 )}
               </span>

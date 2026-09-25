@@ -233,14 +233,14 @@ export const AIAssistant = () => {
             </CardContent>
           </Card>
 
-          {/* Architectural Guardrail Notice */}
+          {/* Academic Study Guidance Notice */}
           <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600 space-y-1.5">
             <p className="font-bold text-slate-900 flex items-center gap-1.5">
               <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-              Grounded AI Architecture
+              Academic Study Guidance
             </p>
             <p className="leading-relaxed">
-              Gemini operates strictly as an <strong>intelligent advisor</strong>. It has zero direct write access to your database. Your study schedule is governed by our deterministic constraint-satisfaction engine.
+              Your AI Advisor provides focused explanations tailored to your syllabus topics. Your study hours and daily schedule remain safely organized according to your personal planner preferences.
             </p>
           </div>
         </div>
