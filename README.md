@@ -297,7 +297,48 @@ cd server && npm run test:adaptive:api
     * `npm run test:quiz`: **100% PASS** (Quiz evaluation and topic performance moving averages).
     * `npm run test:ai`: **100% PASS** (AI advisory and context isolation).
     * `client` production build (`npm run build`): **100% SUCCESS** (0 errors).
-* [ ] **Phase 9:** Comprehensive Analytics & Visual Progress Dashboard (Recharts)
+* [x] **Phase 9 (COMPLETED):** Student Intelligence, Analytics & Insights
+  * **Zero Gemini Authoritative Calculation Guarantee:** All statistical metrics (total study hours, active vs. inactive days, daily velocity, plan adherence %, consistency score %, quiz trajectories, syllabus progress) are calculated 100% deterministically in the Node.js backend. Gemini is strictly optional for conversational synthesis (`/api/analytics/explain-insights`) with automatic fallback to deterministic summaries.
+  * **Zero Crash / AI Independence Guarantee:** The analytics dashboard and all endpoints function completely without failure even if Gemini is disabled, rate-limited, or unavailable.
+  * **Pure Statistical Calculation Engine (`server/src/services/metrics/`):**
+    * `study-metrics.service.js`: Total study time, active vs. calendar-day velocity separation, consistency percentage, timezone-aware daily series, and streak calculator with yesterday-fallback.
+    * `planner-metrics.service.js`: Planned study time vs. actual focus, adherence score (bounded 0–100%), status distribution counts (`COMPLETED`, `MISSED`, `PENDING`, `SKIPPED`), completion rate %, and miss rate %.
+    * `quiz-metrics.service.js`: Score trajectory, historical moving averages, and trend classification (`IMPROVING`, `DECLINING`, `STABLE`, `INSUFFICIENT_DATA`).
+    * `completion-metrics.service.js`: Weighted syllabus completion %, topic status distributions, subject-level breakdowns, and exam countdowns.
+  * **Deterministic Educational Insight Engine (`server/src/services/analytics/insight.service.js`):**
+    * 11+ deterministic pedagogic rules evaluating approaching exams, quiz score shifts, weak topic concentrations, plan adherence, study habit consistency, and multi-day inactivity gaps.
+    * Deterministic priority ordering: `EXAM_URGENCY` (100) $\rightarrow$ `QUIZ_PERFORMANCE` (95/80) $\rightarrow$ `TOPIC_PERFORMANCE` (85) $\rightarrow$ `PLAN_ADHERENCE` (75) $\rightarrow$ `STUDY_CONSISTENCY` (70) $\rightarrow$ `STUDY_PATTERN` (65) $\rightarrow$ `SUBJECT_BALANCE` (60) $\rightarrow$ `ACADEMIC_PROGRESS` (50).
+    * Deduplication and strict cap at top 3–5 actionable insights.
+    * Strict non-judgmental, neutral tone audit.
+  * **REST APIs (`/api/analytics/`):**
+    * `GET /api/analytics/overview?days=30`: Aggregated dashboard payload combining study, planner, quiz, academic completion, and deterministic insights in a single parallel query.
+    * `GET /api/analytics/study?days=30`: Granular study session velocity and streaks.
+    * `GET /api/analytics/academic?days=30`: Syllabus completion and subject breakdowns.
+    * `GET /api/analytics/quiz?days=30`: Quiz mastery trajectories and score trends.
+    * `GET /api/analytics/planner?days=30`: Plan adherence and task status distributions.
+    * `GET /api/analytics/trends?days=30`: Chronological daily series for Recharts visualizations.
+    * `GET /api/analytics/insights?days=30`: Prioritized deterministic insights.
+    * `GET /api/analytics/subjects/:subjectId?days=30`: Single subject deep-dive with weak topics.
+    * `GET /api/analytics/topics/:topicId`: Topic drill-down with session history and quiz attempts.
+    * `POST /api/analytics/explain-insights`: Friendly AI Coach explanation with deterministic fallback.
+  * **Strict Light Theme UI (`client/src/`):**
+    * `Analytics.jsx`: Complete `/analytics` page with time range selector (`7d`, `14d`, `30d`, `90d`), refresh button, and responsive layout.
+    * `OverviewMetrics.jsx`: Core KPI cards (Total Study Time, Consistency %, Current Streak, Plan Adherence %).
+    * `StudyTrendChart.jsx`: Recharts BarChart visualizing daily focus minutes with light-themed tooltips.
+    * `QuizTrendChart.jsx`: Recharts LineChart tracking assessment trajectories with trend badges (`Improving`, `Declining`, `Stable`).
+    * `PlannerAdherence.jsx`: Dual-bar timeline comparing planned vs actual study time with status distribution chips.
+    * `SubjectProgress.jsx`: Syllabus completion bars with course colors, topic counters, and exam countdown badges (`Exam in Xd`, `Exam Today!`, `Exam Passed`).
+    * `InsightsPanel.jsx`: Severity-coded intelligence cards with actionable recommendations and interactive AI Coach modal.
+    * `TopicAnalyticsTable.jsx`: Comprehensive table with search filter, subject filter, status filter, and pagination.
+    * `Dashboard.jsx`: 7-day Student Intelligence Preview card linking to `/analytics`.
+    * `SubjectDetails.jsx`, `Study.jsx`, `Quiz.jsx`: Deep links connecting the entire learning loop.
+  * **Verification Suites:**
+    * `npm run test:analytics:metrics`: **100% PASS** (6/6 test groups passed).
+    * `npm run test:analytics:insights`: **100% PASS** (6/6 test groups passed).
+    * `npm run test:analytics:api`: **100% PASS** (6/6 integration tests passed with cross-user RLS tenant isolation).
+    * `npm run test:analytics`: **100% PASS** (Unified suite passed).
+    * `npm run test:priority:adaptive`, `npm run test:adaptive`, `npm run test:planner`, `npm run test:quiz`, `npm run test:ai`: **100% PASS** (All regressions verified).
+    * `npm run build` in `client/`: **100% SUCCESS** (Vite built in <700ms, 0 errors).
 * [ ] **Phase 10:** Contextual AI Tutor & Natural Language Study Log Parser
 * [ ] **Phase 11:** Multi-Tier Testing, Security Audits & Optimization
 * [ ] **Phase 12:** Production Deployment, CI/CD & Final Capstone Presentation
