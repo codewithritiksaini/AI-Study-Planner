@@ -10,7 +10,8 @@ import {
   Trash2,
   Clock,
   CheckCircle2,
-  ListFilter
+  ListFilter,
+  Brain
 } from 'lucide-react';
 import { subjectService } from '../services/subjects.js';
 import { topicService } from '../services/topics.js';
@@ -323,8 +324,17 @@ export const SubjectDetails = () => {
             </div>
           </div>
 
-          {/* Action buttons (Edit & Delete) */}
+          {/* Action buttons (Quiz, Edit & Delete) */}
           <div className="flex items-center gap-2 self-start lg:self-center">
+            <Button
+              variant="outline"
+              size="sm"
+              icon={Brain}
+              onClick={() => navigate(`/quiz?subjectId=${subject.id}`)}
+              className="text-indigo-700 border-indigo-200 hover:bg-indigo-50"
+            >
+              Practice Quiz
+            </Button>
             <Button
               variant="outline"
               size="sm"

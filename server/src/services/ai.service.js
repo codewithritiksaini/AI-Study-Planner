@@ -4,6 +4,9 @@ import { recommendationPrompt } from '../ai/prompts/recommendation.prompt.js';
 import { explainPlanPrompt } from '../ai/prompts/explainPlan.prompt.js';
 import { studyStrategyPrompt } from '../ai/prompts/studyStrategy.prompt.js';
 import { askPrompt } from '../ai/prompts/ask.prompt.js';
+import { quizGenerationPrompt } from '../ai/prompts/quizGeneration.prompt.js';
+import { quizExplanationPrompt } from '../ai/prompts/quizExplanation.prompt.js';
+import { aiGeneratedQuizSchema } from '../validators/quiz.validator.js';
 
 class AIService {
   /**
@@ -237,6 +240,111 @@ class AIService {
       ],
       source: 'FALLBACK_RULE_ENGINE'
     };
+  }
+
+  /**
+   * Generates structured multiple-choice quiz questions using Gemini AI.
+   * Sanitizes all inputs, enforces system boundaries, and strictly validates response schema.
+   *
+   * @param {Object} params
+   * @param {string} params.subjectName
+   * @param {string} params.topicName
+   * @param {string} [params.topicDescription]
+   * @param {string} params.difficulty - 'EASY' | 'MEDIUM' | 'HARD'
+   * @param {number} params.questionCount - between 3 and 20
+   * @returns {Promise<Object>} Validated quiz data containing title, description, questions
+   */
+  async generateQuizContent({ subjectName, topicName, topicDescription, difficulty, questionCount }) {
+    const cleanSubject = aiContextService.sanitizeText(subjectName);
+    const cleanTopic = aiContextService.sanitizeText(topicName);
+    const cleanDesc = aiContextService.sanitizeText(topicDescription || '');
+
+    const promptText = quizGenerationPrompt.buildPrompt({
+      subjectName: cleanSubject,
+      topicName: cleanTopic,
+      topicDescription: cleanDesc,
+      difficulty,
+      questionCount
+    });
+
+    try {
+      const aiResponse = await geminiService.generateContent({
+        prompt: promptText,
+        systemInstruction: quizGenerationPrompt.systemInstruction,
+        expectJson: true,
+        maxOutputTokens: 8192
+      });
+
+      // Strict schema validation using Zod
+      const parseResult = aiGeneratedQuizSchema.safeParse(aiResponse);
+      if (!parseResult.success) {
+        console.error('AI Quiz validation failure:', parseResult.error.format());
+        const err = new Error('AI generated malformed quiz format or invalid options.');
+        err.code = 'AI_INVALID_QUIZ_RESPONSE';
+        err.statusCode = 502;
+        throw err;
+      }
+
+      return {
+        ...parseResult.data,
+        source: 'AI',
+        prompt_version: quizGenerationPrompt.version
+      };
+    } catch (err) {
+      if (err.code === 'AI_INVALID_QUIZ_RESPONSE') {
+        throw err;
+      }
+      console.error('Quiz generation AI call failed:', err.message);
+      const error = new Error('Quiz generation is temporarily unavailable. Please try again later.');
+      error.code = 'AI_QUIZ_GENERATION_FAILED';
+      error.statusCode = 503;
+      throw error;
+    }
+  }
+
+  /**
+   * Generates a pedagogical on-demand explanation for why an answer was wrong and why the correct answer is right.
+   */
+  async explainQuizQuestion({ topicName, questionText, selectedAnswer, correctAnswer, existingExplanation }) {
+    const cleanTopic = aiContextService.sanitizeText(topicName);
+    const cleanQuestion = aiContextService.sanitizeText(questionText);
+    const cleanSelected = aiContextService.sanitizeText(selectedAnswer || '');
+    const cleanCorrect = aiContextService.sanitizeText(correctAnswer);
+    const cleanExisting = aiContextService.sanitizeText(existingExplanation || '');
+
+    const promptText = quizExplanationPrompt.buildPrompt({
+      topicName: cleanTopic,
+      questionText: cleanQuestion,
+      selectedAnswer: cleanSelected,
+      correctAnswer: cleanCorrect,
+      existingExplanation: cleanExisting
+    });
+
+    try {
+      const aiResponse = await geminiService.generateContent({
+        prompt: promptText,
+        systemInstruction: quizExplanationPrompt.systemInstruction,
+        expectJson: true
+      });
+
+      if (aiResponse && aiResponse.why_correct && aiResponse.why_incorrect) {
+        return {
+          ...aiResponse,
+          source: 'GEMINI_AI',
+          prompt_version: quizExplanationPrompt.version
+        };
+      }
+      throw new Error('AI explanation schema incomplete');
+    } catch (err) {
+      console.warn('AI quiz explanation fallback triggered:', err.message);
+      return {
+        summary: `Conceptual breakdown for ${cleanTopic}`,
+        why_correct: cleanExisting || `The correct answer is "${cleanCorrect}" based on standard core definitions of ${cleanTopic}.`,
+        why_incorrect: cleanSelected ? `"${cleanSelected}" is not correct for this question.` : 'No option was selected for this question.',
+        key_takeaway: `Review key concepts of ${cleanTopic} to reinforce this topic.`,
+        source: 'FALLBACK_EXPLANATION'
+      };
+    }
   }
 }
 

@@ -75,21 +75,26 @@ export class SubjectService {
 
     const topicsText = `
       SELECT
-        id,
-        subject_id,
-        name,
-        description,
-        difficulty,
-        estimated_minutes,
-        status,
-        completion_percentage::float AS completion_percentage,
-        created_at,
-        updated_at
-      FROM public.topics
-      WHERE subject_id = $1
-      ORDER BY created_at ASC;
+        t.id,
+        t.subject_id,
+        t.name,
+        t.description,
+        t.difficulty,
+        t.estimated_minutes,
+        t.status,
+        t.completion_percentage::float AS completion_percentage,
+        t.created_at,
+        t.updated_at,
+        tp.performance_level,
+        tp.composite_score,
+        tp.attempt_count,
+        tp.last_assessed_at
+      FROM public.topics t
+      LEFT JOIN public.topic_performance tp ON tp.topic_id = t.id AND tp.user_id = $2
+      WHERE t.subject_id = $1
+      ORDER BY t.created_at ASC;
     `;
-    const topicsRes = await query(topicsText, [subjectId]);
+    const topicsRes = await query(topicsText, [subjectId, userId]);
     subject.topics = topicsRes.rows;
 
     return subject;

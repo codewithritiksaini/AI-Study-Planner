@@ -43,9 +43,10 @@ class GeminiService {
    * @param {string} [options.systemInstruction] - System instruction defining AI boundaries
    * @param {boolean} [options.expectJson] - Whether output should be parsed as JSON
    * @param {string} [options.model] - Override model name
+   * @param {number} [options.maxOutputTokens] - Override max output tokens
    * @returns {Promise<Object|string>}
    */
-  async generateContent({ prompt, systemInstruction = '', expectJson = true, model = null }) {
+  async generateContent({ prompt, systemInstruction = '', expectJson = true, model = null, maxOutputTokens = null }) {
     if (!this.isConfigured()) {
       const error = new Error('Gemini API is not configured or API key is missing.');
       error.code = AI_CONFIG.errorCodes.CONFIG_ERROR;
@@ -59,7 +60,7 @@ class GeminiService {
     const config = {
       temperature: AI_CONFIG.generationConfig.temperature,
       topP: AI_CONFIG.generationConfig.topP,
-      maxOutputTokens: AI_CONFIG.generationConfig.maxOutputTokens
+      maxOutputTokens: maxOutputTokens || AI_CONFIG.generationConfig.maxOutputTokens
     };
 
     if (systemInstruction) {

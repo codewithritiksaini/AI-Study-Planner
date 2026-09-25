@@ -1,7 +1,8 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle2, Circle, Clock, Edit2, Trash2, Play, Sparkles } from 'lucide-react';
+import { CheckCircle2, Circle, Clock, Edit2, Trash2, Play, Sparkles, Brain } from 'lucide-react';
 import Badge from '../common/Badge.jsx';
+import PerformanceBadge from '../quiz/PerformanceBadge.jsx';
 
 export const TopicItem = ({
   topic,
@@ -110,6 +111,9 @@ export const TopicItem = ({
             </h4>
             {renderDifficultyBadge()}
             {renderStatusBadge()}
+            {topic.performance_level && (
+              <PerformanceBadge level={topic.performance_level} size="sm" />
+            )}
           </div>
 
           {description && (
@@ -151,6 +155,14 @@ export const TopicItem = ({
         >
           <Play className="w-3 h-3 fill-indigo-600" />
           Study
+        </button>
+        <button
+          onClick={() => navigate(`/quiz?subjectId=${topic.subject_id}&topicId=${topic.id}`)}
+          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 transition-colors shadow-2xs mr-1"
+          title="Practice AI Quiz for this Topic"
+        >
+          <Brain className="w-3 h-3 text-emerald-600" />
+          Quiz
         </button>
         {onGetStrategy && (
           <button

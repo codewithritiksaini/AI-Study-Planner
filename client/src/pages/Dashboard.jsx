@@ -15,18 +15,22 @@ import {
   TrendingUp,
   Clock,
   Plus,
-  CheckCircle2
+  CheckCircle2,
+  Brain
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { subjectService } from '../services/subjects.js';
 import { studyService } from '../services/study.js';
 import { plannerService } from '../services/planner.js';
 import { aiService } from '../services/ai.js';
+import performanceService from '../services/performance.js';
+import quizService from '../services/quizzes.js';
 import PageHeader from '../components/common/PageHeader.jsx';
 import Card, { CardHeader, CardTitle, CardContent } from '../components/common/Card.jsx';
 import Badge from '../components/common/Badge.jsx';
 import Button from '../components/common/Button.jsx';
 import LoadingSpinner from '../components/common/LoadingSpinner.jsx';
+import WeakTopicsCard from '../components/quiz/WeakTopicsCard.jsx';
 
 export const Dashboard = () => {
   const navigate = useNavigate();
@@ -61,6 +65,13 @@ export const Dashboard = () => {
   const [aiAdvice, setAiAdvice] = useState(null);
   const [loadingAiAdvice, setLoadingAiAdvice] = useState(false);
 
+  // Phase 7 Quiz & Performance metrics
+  const [quizMetrics, setQuizMetrics] = useState({
+    totalQuizzes: 0,
+    averageScore: 0,
+    assessedTopicsCount: 0
+  });
+
   const fetchAIAdvice = async () => {
     try {
       setLoadingAiAdvice(true);
@@ -79,11 +90,13 @@ export const Dashboard = () => {
     const loadDashboardData = async () => {
       try {
         setLoadingSummary(true);
-        const [academicSummary, activeSess, todayData, planData] = await Promise.all([
+        const [academicSummary, activeSess, todayData, planData, perfs, history] = await Promise.all([
           subjectService.getDashboardSummary(),
           studyService.getActiveSession().catch(() => null),
           studyService.getTodaySessions().catch(() => ({ total_minutes: 0, session_count: 0, sessions: [] })),
-          plannerService.getTodayPlan().catch(() => ({ total_planned_minutes: 0, completed_minutes: 0, pending_minutes: 0, plans: [] }))
+          plannerService.getTodayPlan().catch(() => ({ total_planned_minutes: 0, completed_minutes: 0, pending_minutes: 0, plans: [] })),
+          performanceService.getAllTopicPerformance().catch(() => []),
+          quizService.getQuizHistory(10).catch(() => [])
         ]);
 
         if (isMounted) {
@@ -91,6 +104,17 @@ export const Dashboard = () => {
           if (activeSess) setActiveSession(activeSess);
           if (todayData) setTodayStudy(todayData);
           if (planData) setTodayPlan(planData);
+          
+          if (perfs) {
+            const avg = perfs.length > 0
+              ? Math.round(perfs.reduce((sum, p) => sum + Number(p.composite_score || 0), 0) / perfs.length)
+              : 0;
+            setQuizMetrics({
+              totalQuizzes: history?.length || 0,
+              averageScore: avg,
+              assessedTopicsCount: perfs.length
+            });
+          }
         }
       } catch (err) {
         console.error('Failed to load dashboard data:', err);
@@ -221,8 +245,8 @@ export const Dashboard = () => {
         </div>
       )}
 
-      {/* Metric Cards Row (Real Study Activity + Academic Metrics) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      {/* Metric Cards Row (Real Study Activity + Academic Metrics + Quiz Mastery) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
         {/* Metric 1: Today's Verified Study Time */}
         <Card hover onClick={() => navigate('/study')} className="cursor-pointer">
           <CardContent className="p-4 flex items-center gap-3.5">
@@ -236,7 +260,7 @@ export const Dashboard = () => {
                   {loadingSummary ? '—' : formatHoursMinutes(todayStudy.total_minutes)}
                 </span>
                 <span className="text-[11px] text-emerald-600 font-medium">
-                  {todayStudy.session_count} {todayStudy.session_count === 1 ? 'session' : 'sessions'}
+                  {todayStudy.session_count} {todayStudy.session_count === 1 ? 'sess' : 'sess'}
                 </span>
               </div>
             </div>
@@ -250,12 +274,12 @@ export const Dashboard = () => {
               <BookOpen className="w-5 h-5" />
             </div>
             <div className="flex-1">
-              <p className="text-xs text-slate-500 font-medium">Subjects Enrolled</p>
+              <p className="text-xs text-slate-500 font-medium">Enrolled Courses</p>
               <div className="flex items-baseline gap-1.5 mt-0.5">
                 <span className="text-2xl font-bold text-slate-900">
                   {loadingSummary ? '—' : summary.totalSubjects}
                 </span>
-                <span className="text-[11px] text-slate-400">Courses</span>
+                <span className="text-[11px] text-slate-400">Subjects</span>
               </div>
             </div>
           </CardContent>
@@ -268,18 +292,38 @@ export const Dashboard = () => {
               <TrendingUp className="w-5 h-5" />
             </div>
             <div className="flex-1">
-              <p className="text-xs text-slate-500 font-medium">Overall Syllabus</p>
+              <p className="text-xs text-slate-500 font-medium">Syllabus Progress</p>
               <div className="flex items-baseline gap-1.5 mt-0.5">
                 <span className="text-2xl font-bold text-slate-900">
                   {loadingSummary ? '—' : `${summary.overallSyllabusProgress}%`}
                 </span>
-                <span className="text-[11px] text-violet-600 font-medium">Completed</span>
+                <span className="text-[11px] text-violet-600 font-medium">Covered</span>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Metric 4: Next Exam Deadline */}
+        {/* Metric 4: Quiz Mastery (Phase 7) */}
+        <Card hover onClick={() => navigate('/quiz')} className="cursor-pointer">
+          <CardContent className="p-4 flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
+              <Brain className="w-5 h-5" />
+            </div>
+            <div className="flex-1">
+              <p className="text-xs text-slate-500 font-medium">Quiz Mastery</p>
+              <div className="flex items-baseline gap-1.5 mt-0.5">
+                <span className="text-2xl font-bold text-slate-900">
+                  {quizMetrics.assessedTopicsCount > 0 ? `${quizMetrics.averageScore}%` : '—'}
+                </span>
+                <span className="text-[11px] text-purple-600 font-medium">
+                  {quizMetrics.assessedTopicsCount} tested
+                </span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Metric 5: Next Exam Deadline */}
         <Card hover>
           <CardContent className="p-4 flex items-center gap-3.5">
             <div className="w-10 h-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
@@ -288,7 +332,7 @@ export const Dashboard = () => {
             <div className="flex-1">
               <p className="text-xs text-slate-500 font-medium">Next Exam</p>
               <div className="flex items-baseline gap-1.5 mt-0.5">
-                <span className="text-lg font-bold text-slate-900 truncate max-w-[130px]" title={summary.upcomingExam?.name || 'None Scheduled'}>
+                <span className="text-lg font-bold text-slate-900 truncate max-w-[110px]" title={summary.upcomingExam?.name || 'None Scheduled'}>
                   {summary.upcomingExam ? `${summary.upcomingExam.days_until_exam}d` : 'None'}
                 </span>
                 <span className="text-[11px] text-slate-400">
@@ -507,25 +551,8 @@ export const Dashboard = () => {
             </CardContent>
           </Card>
 
-          {/* Weak Topics Card Placeholder */}
-          <Card>
-            <CardHeader className="pb-2">
-              <div className="flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 text-amber-500" />
-                <CardTitle className="text-sm">Attention Required</CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-2 pt-0">
-              <div className="flex items-center justify-between text-xs p-2 rounded-lg bg-amber-50/60 border border-amber-200/60">
-                <span className="font-medium text-amber-900">BCNF Decomposition</span>
-                <span className="text-amber-700 font-semibold">40% Quiz</span>
-              </div>
-              <div className="flex items-center justify-between text-xs p-2 rounded-lg bg-amber-50/60 border border-amber-200/60">
-                <span className="font-medium text-amber-900">Page Replacement Algorithms</span>
-                <span className="text-amber-700 font-semibold">48% Quiz</span>
-              </div>
-            </CardContent>
-          </Card>
+          {/* Weak Topics Card (Phase 7 Real Topic Performance) */}
+          <WeakTopicsCard limit={3} />
         </div>
       </div>
     </div>

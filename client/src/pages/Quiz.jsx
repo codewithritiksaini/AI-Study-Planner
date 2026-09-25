@@ -1,116 +1,284 @@
-import React from 'react';
-import { HelpCircle, Sparkles, Brain, CheckCircle2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { 
+  Brain, 
+  Sparkles, 
+  History, 
+  HelpCircle, 
+  CheckCircle2, 
+  BookOpen, 
+  AlertCircle 
+} from 'lucide-react';
 import PageHeader from '../components/common/PageHeader.jsx';
-import Card, { CardHeader, CardTitle, CardContent } from '../components/common/Card.jsx';
 import Badge from '../components/common/Badge.jsx';
 import Button from '../components/common/Button.jsx';
-import Select from '../components/common/Select.jsx';
+import QuizGeneratorForm from '../components/quiz/QuizGeneratorForm.jsx';
+import QuizTakingCard from '../components/quiz/QuizTakingCard.jsx';
+import QuizResultCard from '../components/quiz/QuizResultCard.jsx';
+import QuizHistoryTable from '../components/quiz/QuizHistoryTable.jsx';
+import quizService from '../services/quizzes.js';
 
 export const Quiz = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const preselectedSubjectId = searchParams.get('subjectId');
+  const preselectedTopicId = searchParams.get('topicId');
+  const attemptIdParam = searchParams.get('attemptId');
+
+  // Modes: 'PRACTICE' | 'TAKING' | 'RESULT' | 'HISTORY'
+  const [activeTab, setActiveTab] = useState('PRACTICE');
+  const [currentMode, setCurrentMode] = useState('PRACTICE');
+
+  // Active quiz & attempt states
+  const [activeQuiz, setActiveQuiz] = useState(null);
+  const [activeAttemptId, setActiveAttemptId] = useState(null);
+  const [activeResult, setActiveResult] = useState(null);
+
+  const [submittingAttempt, setSubmittingAttempt] = useState(false);
+  const [loadingAttemptReview, setLoadingAttemptReview] = useState(false);
+  const [globalError, setGlobalError] = useState(null);
+  const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
+
+  // If URL has attemptId param, load that review directly
+  useEffect(() => {
+    if (attemptIdParam) {
+      loadAttemptReview(attemptIdParam);
+    }
+  }, [attemptIdParam]);
+
+  const loadAttemptReview = async (attemptId) => {
+    setLoadingAttemptReview(true);
+    setGlobalError(null);
+    try {
+      const reviewData = await quizService.getAttemptReview(attemptId);
+      setActiveResult(reviewData);
+      setActiveQuiz({
+        id: reviewData.quiz_id,
+        title: reviewData.quiz_title,
+        difficulty: reviewData.quiz_difficulty
+      });
+      setCurrentMode('RESULT');
+    } catch (err) {
+      console.error('Failed to load attempt review:', err);
+      setGlobalError('Could not load quiz attempt review.');
+    } finally {
+      setLoadingAttemptReview(false);
+    }
+  };
+
+  // Called when AI quiz generator finishes generating quiz & starting attempt
+  const handleQuizGenerated = (quiz, attempt) => {
+    setActiveQuiz(quiz);
+    setActiveAttemptId(attempt?.id);
+    setActiveResult(null);
+    setGlobalError(null);
+    setCurrentMode('TAKING');
+  };
+
+  // Submits the attempt to the deterministic backend evaluation engine
+  const handleSubmitAttempt = async (answers) => {
+    if (!activeQuiz?.id || !activeAttemptId) return;
+
+    setSubmittingAttempt(true);
+    setGlobalError(null);
+
+    try {
+      const resultData = await quizService.submitAttempt(
+        activeQuiz.id,
+        activeAttemptId,
+        answers
+      );
+      setActiveResult(resultData);
+      setCurrentMode('RESULT');
+      setHistoryRefreshKey(prev => prev + 1);
+    } catch (err) {
+      console.error('Failed to submit quiz attempt:', err);
+      setGlobalError(err.response?.data?.message || 'Failed to submit quiz. Please try again.');
+    } finally {
+      setSubmittingAttempt(false);
+    }
+  };
+
+  // Starts a fresh attempt on the same quiz
+  const handleRetakeQuiz = async () => {
+    if (!activeQuiz?.id) {
+      setCurrentMode('PRACTICE');
+      return;
+    }
+
+    try {
+      const newAttempt = await quizService.startAttempt(activeQuiz.id);
+      setActiveAttemptId(newAttempt.id);
+      setActiveResult(null);
+      setCurrentMode('TAKING');
+    } catch (err) {
+      console.error('Failed to start new attempt:', err);
+      setGlobalError('Failed to retake quiz. Please try generating a new one.');
+    }
+  };
+
+  const handleReviewAttempt = async (attemptId) => {
+    await loadAttemptReview(attemptId);
+  };
+
+  const handleBackToList = () => {
+    setCurrentMode('PRACTICE');
+    setActiveQuiz(null);
+    setActiveAttemptId(null);
+    setActiveResult(null);
+    setGlobalError(null);
+    // Remove attemptId query param if present
+    if (searchParams.has('attemptId')) {
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete('attemptId');
+      setSearchParams(newParams);
+    }
+  };
+
   return (
-    <div>
+    <div className="space-y-6">
+      {/* Top Page Header */}
       <PageHeader
         title="AI Quiz & Topic Mastery"
-        subtitle="Test your conceptual understanding with AI-generated multiple-choice questions."
-        badge={<Badge variant="primary">Phase 1 Preview</Badge>}
+        subtitle="Challenge your conceptual understanding with AI-generated multiple-choice questions & on-demand pedagogical explanations."
+        badge={
+          <Badge variant="purple" size="sm">
+            <Sparkles className="w-3 h-3 inline mr-1" />
+            AI Powered
+          </Badge>
+        }
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column: Quiz Generator Form */}
-        <div className="lg:col-span-1 space-y-4">
-          <Card>
-            <CardHeader>
+      {globalError && (
+        <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-800 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+            <span>{globalError}</span>
+          </div>
+          <Button variant="ghost" size="sm" onClick={() => setGlobalError(null)}>
+            Dismiss
+          </Button>
+        </div>
+      )}
+
+      {/* Navigation Tabs (Only visible when NOT actively taking a quiz) */}
+      {currentMode !== 'TAKING' && currentMode !== 'RESULT' && (
+        <div className="flex border-b border-slate-200">
+          <button
+            onClick={() => setActiveTab('PRACTICE')}
+            className={`flex items-center gap-2 py-3 px-4 font-semibold text-xs border-b-2 transition-colors ${
+              activeTab === 'PRACTICE'
+                ? 'border-indigo-600 text-indigo-600'
+                : 'border-transparent text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <Brain className="w-4 h-4" />
+            Generate & Practice
+          </button>
+
+          <button
+            onClick={() => setActiveTab('HISTORY')}
+            className={`flex items-center gap-2 py-3 px-4 font-semibold text-xs border-b-2 transition-colors ${
+              activeTab === 'HISTORY'
+                ? 'border-indigo-600 text-indigo-600'
+                : 'border-transparent text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <History className="w-4 h-4" />
+            Quiz History
+          </button>
+        </div>
+      )}
+
+      {/* VIEW 1: ACTIVE QUIZ TAKING */}
+      {currentMode === 'TAKING' && activeQuiz && (
+        <QuizTakingCard
+          quiz={activeQuiz}
+          attemptId={activeAttemptId}
+          onSubmitAttempt={handleSubmitAttempt}
+          submitting={submittingAttempt}
+        />
+      )}
+
+      {/* VIEW 2: QUIZ RESULT & DETAILED REVIEW */}
+      {currentMode === 'RESULT' && activeResult && (
+        <QuizResultCard
+          result={activeResult}
+          quiz={activeQuiz}
+          onRetake={handleRetakeQuiz}
+          onBackToList={handleBackToList}
+        />
+      )}
+
+      {/* VIEW 3: PRACTICE GENERATOR TAB */}
+      {currentMode === 'PRACTICE' && activeTab === 'PRACTICE' && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left Column: Form */}
+          <div className="lg:col-span-1">
+            <QuizGeneratorForm
+              onQuizGenerated={handleQuizGenerated}
+              initialSubjectId={preselectedSubjectId}
+              initialTopicId={preselectedTopicId}
+            />
+          </div>
+
+          {/* Right Column: Educational Feature Overview Card */}
+          <div className="lg:col-span-2 space-y-4">
+            <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-4">
               <div className="flex items-center gap-2">
-                <Brain className="w-5 h-5 text-indigo-600" />
-                <CardTitle className="text-base">Configure Quiz</CardTitle>
+                <div className="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center">
+                  <Brain className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">How AI Topic Mastery Works</h3>
+                  <p className="text-xs text-slate-500">Conceptual recall, edge cases & deterministic grading</p>
+                </div>
               </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Select
-                label="Select Subject"
-                options={[
-                  { value: 'dbms', label: 'Database Management Systems' },
-                  { value: 'os', label: 'Operating Systems' },
-                  { value: 'cn', label: 'Computer Networks' }
-                ]}
-              />
 
-              <Select
-                label="Select Topic"
-                options={[
-                  { value: 'bcnf', label: 'BCNF & Normalization' },
-                  { value: 'sql', label: 'Complex SQL Queries' },
-                  { value: 'tx', label: 'Transactions & ACID' }
-                ]}
-              />
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">
+                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100 space-y-1.5">
+                  <span className="w-6 h-6 rounded-full bg-indigo-600 text-white text-[11px] font-bold flex items-center justify-center">1</span>
+                  <p className="text-xs font-bold text-slate-800">Syllabus-Aligned MCQs</p>
+                  <p className="text-[11px] text-slate-500 leading-relaxed">
+                    AI synthesizes questions strictly from your subject syllabus topics.
+                  </p>
+                </div>
 
-              <Select
-                label="Difficulty Level"
-                options={[
-                  { value: 'EASY', label: 'Easy (Foundational Recall)' },
-                  { value: 'MEDIUM', label: 'Medium (Application & Analysis)' },
-                  { value: 'HARD', label: 'Hard (Deep Conceptual & Edge Cases)' }
-                ]}
-              />
+                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100 space-y-1.5">
+                  <span className="w-6 h-6 rounded-full bg-emerald-600 text-white text-[11px] font-bold flex items-center justify-center">2</span>
+                  <p className="text-xs font-bold text-slate-800">Secure Backend Grading</p>
+                  <p className="text-[11px] text-slate-500 leading-relaxed">
+                    Answer keys are hidden from the browser during taking and scored server-side.
+                  </p>
+                </div>
 
-              <Button icon={Sparkles} className="w-full mt-2" disabled>
-                Generate 5-Question Quiz
-              </Button>
+                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100 space-y-1.5">
+                  <span className="w-6 h-6 rounded-full bg-violet-600 text-white text-[11px] font-bold flex items-center justify-center">3</span>
+                  <p className="text-xs font-bold text-slate-800">Weak Topic Tracking</p>
+                  <p className="text-[11px] text-slate-500 leading-relaxed">
+                    Composite score recalculates topic mastery level (Weak, Needs Practice, Strong).
+                  </p>
+                </div>
+              </div>
+            </div>
 
-              <p className="text-[11px] text-slate-400 text-center">
-                * Gemini 1.5 structured JSON quiz generation will be activated in Phase 7.
-              </p>
-            </CardContent>
-          </Card>
+            {/* Quick Past Attempts Preview */}
+            <QuizHistoryTable
+              onReviewAttempt={handleReviewAttempt}
+              onStartNewQuiz={() => setActiveTab('PRACTICE')}
+              refreshTrigger={historyRefreshKey}
+            />
+          </div>
         </div>
+      )}
 
-        {/* Right Column: Quiz Question Preview Card */}
-        <div className="lg:col-span-2">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-3">
-              <div>
-                <CardTitle className="text-sm">Interactive Quiz Interface Preview</CardTitle>
-                <p className="text-xs text-slate-500">Sample conceptual question format</p>
-              </div>
-              <Badge variant="purple" size="sm">Sample Question</Badge>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
-                <p className="text-xs font-bold text-indigo-600 mb-1">QUESTION 1 OF 5</p>
-                <p className="text-sm font-semibold text-slate-900 leading-snug">
-                  Which of the following conditions is necessary and sufficient for a relation R to be in Boyce-Codd Normal Form (BCNF)?
-                </p>
-              </div>
-
-              {/* Options */}
-              <div className="space-y-2">
-                {[
-                  'A. Every determinant is a candidate key',
-                  'B. Every non-prime attribute is fully functionally dependent on the primary key',
-                  'C. There are no multi-valued dependencies',
-                  'D. No non-prime attribute is transitively dependent on the primary key'
-                ].map((opt, idx) => (
-                  <div
-                    key={idx}
-                    className={`p-3 rounded-lg border text-xs font-medium cursor-pointer transition-colors ${
-                      idx === 0
-                        ? 'border-indigo-600 bg-indigo-50/50 text-indigo-900 font-semibold'
-                        : 'border-slate-200 hover:border-slate-300 text-slate-700 bg-white'
-                    }`}
-                  >
-                    {opt}
-                  </div>
-                ))}
-              </div>
-
-              <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-xs text-emerald-800">
-                <span className="font-bold">Pedagogical Explanation: </span>
-                A relation is in BCNF if and only if for every non-trivial functional dependency X &rarr; Y, X is a superkey (candidate key).
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+      {/* VIEW 4: QUIZ HISTORY TAB */}
+      {currentMode === 'PRACTICE' && activeTab === 'HISTORY' && (
+        <QuizHistoryTable
+          onReviewAttempt={handleReviewAttempt}
+          onStartNewQuiz={() => setActiveTab('PRACTICE')}
+          refreshTrigger={historyRefreshKey}
+        />
+      )}
     </div>
   );
 };

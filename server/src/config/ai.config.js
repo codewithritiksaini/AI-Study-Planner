@@ -6,17 +6,18 @@ import { env } from './env.js';
  */
 export const AI_CONFIG = {
   // Model selection
-  model: env.GEMINI_MODEL || 'gemini-2.5-flash',
+  model: env.GEMINI_MODEL || 'gemini-3.5-flash-lite',
+  fallbackModels: ['gemini-3.5-flash-lite', 'gemini-3.5-flash', 'gemini-3.8-flash'],
 
   // Network & execution limits
-  timeoutMs: 15000,
+  timeoutMs: 30000,
   maxRetries: 1,
 
   // Generation parameters
   generationConfig: {
     temperature: 0.2, // Low temperature for deterministic, factual reasoning
     topP: 0.95,
-    maxOutputTokens: 1024
+    maxOutputTokens: 2048
   },
 
   // Input boundaries
@@ -24,7 +25,10 @@ export const AI_CONFIG = {
     maxAskMessageLength: 4000,
     maxRecentSessionsInContext: 10,
     maxTopicsInContext: 25,
-    maxRecommendationsReturned: 5
+    maxRecommendationsReturned: 5,
+    minQuizQuestions: 3,
+    maxQuizQuestions: 20,
+    defaultQuizQuestions: 5
   },
 
   // Normalized AI Error Codes
