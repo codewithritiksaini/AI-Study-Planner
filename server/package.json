@@ -22,7 +22,15 @@
     "test:analytics:metrics": "node src/scripts/test_analytics_metrics.js",
     "test:analytics:insights": "node src/scripts/test_analytics_insights.js",
     "test:analytics:api": "node src/scripts/test_analytics_api.js",
-    "test:analytics": "npm run test:analytics:metrics && npm run test:analytics:insights && npm run test:analytics:api"
+    "test:analytics": "npm run test:analytics:metrics && npm run test:analytics:insights && npm run test:analytics:api",
+    "test:rls:phase10": "node src/scripts/test_rls_phase10.js",
+    "test:rec:context": "node src/scripts/test_recommendation_context.js",
+    "test:rec:rules": "node src/scripts/test_recommendation_rules.js",
+    "test:rec:priority": "node src/scripts/test_recommendation_priority.js",
+    "test:rec:lifecycle": "node src/scripts/test_recommendation_lifecycle.js",
+    "test:rec:fallback": "node src/scripts/test_recommendation_gemini_fallback.js",
+    "test:rec:api": "node src/scripts/test_recommendation_api.js",
+    "test:rec": "npm run test:rec:context && npm run test:rec:rules && npm run test:rec:priority && npm run test:rec:lifecycle && npm run test:rec:fallback && npm run test:rec:api"
   },
   "dependencies": {
     "@google/genai": "^2.24.0",

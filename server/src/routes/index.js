@@ -45,4 +45,8 @@ router.use('/performance', performanceRoutes);
 // Student Intelligence & Analytics (Phase 9)
 router.use('/analytics', analyticsRoutes);
 
+// Personalized Recommendation & Smart Study Action Engine (Phase 10)
+import recommendationRoutes from './recommendation.routes.js';
+router.use('/recommendations', recommendationRoutes);
+
 export default router;

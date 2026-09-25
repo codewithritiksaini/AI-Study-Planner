@@ -33,6 +33,7 @@ import Badge from '../components/common/Badge.jsx';
 import Button from '../components/common/Button.jsx';
 import LoadingSpinner from '../components/common/LoadingSpinner.jsx';
 import WeakTopicsCard from '../components/quiz/WeakTopicsCard.jsx';
+import RecommendedNext from '../components/recommendations/RecommendedNext.jsx';
 
 export const Dashboard = () => {
   const navigate = useNavigate();
@@ -349,6 +350,11 @@ export const Dashboard = () => {
             </div>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Recommended Next Actions (Phase 10 Engine) */}
+      <div className="mb-6">
+        <RecommendedNext limit={3} />
       </div>
 
       {/* Main Grid: Curriculum Quick Access vs Profile & Insights */}

@@ -47,7 +47,8 @@ async function runMigrations() {
       FROM information_schema.tables
       WHERE table_schema = 'public' AND table_name IN (
         'profiles', 'subjects', 'topics', 'study_sessions', 'study_plans',
-        'quizzes', 'quiz_questions', 'quiz_attempts', 'quiz_answers', 'topic_performance'
+        'quizzes', 'quiz_questions', 'quiz_attempts', 'quiz_answers', 'topic_performance',
+        'recommendations', 'recommendation_feedback'
       )
       ORDER BY table_name;
     `);
@@ -61,7 +62,8 @@ async function runMigrations() {
       FROM pg_class
       WHERE relname IN (
         'profiles', 'subjects', 'topics', 'study_sessions', 'study_plans',
-        'quizzes', 'quiz_questions', 'quiz_attempts', 'quiz_answers', 'topic_performance'
+        'quizzes', 'quiz_questions', 'quiz_attempts', 'quiz_answers', 'topic_performance',
+        'recommendations', 'recommendation_feedback'
       )
       ORDER BY relname;
     `);
@@ -74,7 +76,8 @@ async function runMigrations() {
       FROM pg_policies
       WHERE tablename IN (
         'profiles', 'subjects', 'topics', 'study_sessions', 'study_plans',
-        'quizzes', 'quiz_questions', 'quiz_attempts', 'quiz_answers', 'topic_performance'
+        'quizzes', 'quiz_questions', 'quiz_attempts', 'quiz_answers', 'topic_performance',
+        'recommendations', 'recommendation_feedback'
       )
       ORDER BY tablename, cmd;
     `);

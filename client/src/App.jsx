@@ -14,6 +14,7 @@ import Study from './pages/Study.jsx';
 import Quiz from './pages/Quiz.jsx';
 import Progress from './pages/Progress.jsx';
 import Analytics from './pages/Analytics.jsx';
+import Recommendations from './pages/Recommendations.jsx';
 import AIAssistant from './pages/AIAssistant.jsx';
 import AITutor from './pages/AITutor.jsx';
 import Profile from './pages/Profile.jsx';
@@ -47,6 +48,7 @@ export function App() {
             <Route path="/quiz" element={<Quiz />} />
             <Route path="/progress" element={<Progress />} />
             <Route path="/analytics" element={<Analytics />} />
+            <Route path="/recommendations" element={<Recommendations />} />
             <Route path="/ai-tutor" element={<AITutor />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/settings" element={<Settings />} />

@@ -12,7 +12,8 @@ import {
   User,
   Settings,
   X,
-  GraduationCap
+  GraduationCap,
+  Target
 } from 'lucide-react';
 import Badge from '../common/Badge.jsx';
 
@@ -25,6 +26,7 @@ export const navigationItems = [
   { label: 'Quiz', path: '/quiz', icon: HelpCircle },
   { label: 'Progress', path: '/progress', icon: CheckCircle2 },
   { label: 'Analytics', path: '/analytics', icon: BarChart3 },
+  { label: 'Smart Actions', path: '/recommendations', icon: Target, badge: 'Phase 10' },
   { label: 'Profile', path: '/profile', icon: User },
   { label: 'Settings', path: '/settings', icon: Settings }
 ];
