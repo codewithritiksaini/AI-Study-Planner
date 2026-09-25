@@ -1,78 +1,111 @@
 import { supabase } from './supabase.js';
+import api from './api.js';
+
+const isSupabaseConfigured = () => {
+  const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  return Boolean(
+    supabase?.auth?.signInWithPassword &&
+    anonKey &&
+    !anonKey.includes('placeholder')
+  );
+};
+
+const notifyAuthChange = (event, session) => {
+  window.dispatchEvent(new CustomEvent('auth-state-change', { detail: { event, session } }));
+};
 
 /**
  * Authentication Service
- * Wraps Supabase Auth client methods with standardized error handling.
+ * Wraps Supabase Auth client methods with standardized error handling
+ * and falls back seamlessly to direct backend database authentication when needed.
  */
 export const authService = {
   /**
    * Register a new student account using email and password.
-   * Handles user metadata (e.g. full_name) for automatic profile generation.
    */
-  async signUp({ email, password, fullName }) {
-    if (!supabase?.auth?.signUp) {
-      throw {
-        code: 'AUTH_UNAVAILABLE',
-        message: 'Supabase authentication service is currently not configured.'
-      };
+  async signUp({ email, password, fullName, branch, semester, targetCgpa }) {
+    if (isSupabaseConfigured()) {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName?.trim() || ''
+          }
+        }
+      });
+
+      if (error) {
+        throw {
+          code: error.code || 'SIGNUP_FAILED',
+          message: error.message || 'Failed to create student account.'
+        };
+      }
+
+      return data;
     }
 
-    const { data, error } = await supabase.auth.signUp({
+    // Direct database backend registration
+    const res = await api.post('/auth/register', {
       email,
       password,
-      options: {
-        data: {
-          full_name: fullName?.trim() || ''
-        }
-      }
+      full_name: fullName,
+      branch,
+      semester,
+      target_cgpa: targetCgpa
     });
 
-    if (error) {
-      throw {
-        code: error.code || 'SIGNUP_FAILED',
-        message: error.message || 'Failed to create student account.'
-      };
+    if (res?.session) {
+      localStorage.setItem('auth_session', JSON.stringify(res.session));
+      notifyAuthChange('SIGNED_IN', res.session);
     }
 
-    return data;
+    return res;
   },
 
   /**
    * Sign in an existing student account using email and password.
    */
   async signIn({ email, password }) {
-    if (!supabase?.auth?.signInWithPassword) {
-      throw {
-        code: 'AUTH_UNAVAILABLE',
-        message: 'Supabase authentication service is currently not configured.'
-      };
+    if (isSupabaseConfigured()) {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if (error) {
+        throw {
+          code: error.code || 'AUTH_INVALID_CREDENTIALS',
+          message: error.message || 'Invalid email or password.'
+        };
+      }
+
+      return data;
     }
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    });
-
-    if (error) {
-      throw {
-        code: error.code || 'AUTH_INVALID_CREDENTIALS',
-        message: error.message || 'Invalid email or password.'
-      };
+    // Direct database backend login
+    const res = await api.post('/auth/login', { email, password });
+    if (res?.session) {
+      localStorage.setItem('auth_session', JSON.stringify(res.session));
+      notifyAuthChange('SIGNED_IN', res.session);
     }
 
-    return data;
+    return res;
   },
 
   /**
    * Sign out the active student user.
    */
   async signOut() {
-    if (!supabase?.auth?.signOut) {
-      return;
-    }
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      console.warn('Signout warning:', error.message);
+    localStorage.removeItem('auth_session');
+    notifyAuthChange('SIGNED_OUT', null);
+
+    if (supabase?.auth?.signOut) {
+      try {
+        await supabase.auth.signOut();
+      } catch (error) {
+        console.warn('Signout warning:', error.message);
+      }
     }
   },
 
@@ -80,39 +113,61 @@ export const authService = {
    * Get current active session.
    */
   async getSession() {
-    if (!supabase?.auth?.getSession) {
-      return null;
+    if (isSupabaseConfigured()) {
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        if (!error && data?.session) {
+          return data.session;
+        }
+      } catch (error) {
+        console.warn('Get session error:', error.message);
+      }
     }
-    const { data, error } = await supabase.auth.getSession();
-    if (error) {
-      console.warn('Get session error:', error.message);
-      return null;
+
+    const stored = localStorage.getItem('auth_session');
+    if (stored) {
+      try {
+        return JSON.parse(stored);
+      } catch {
+        localStorage.removeItem('auth_session');
+      }
     }
-    return data?.session || null;
+    return null;
   },
 
   /**
    * Get current authenticated user.
    */
   async getUser() {
-    if (!supabase?.auth?.getUser) {
-      return null;
-    }
-    const { data, error } = await supabase.auth.getUser();
-    if (error) {
-      return null;
-    }
-    return data?.user || null;
+    const session = await this.getSession();
+    return session?.user || null;
   },
 
   /**
-   * Listen to Supabase auth state changes.
+   * Listen to auth state changes (both Supabase and custom session events).
    */
   onAuthStateChange(callback) {
-    if (!supabase?.auth?.onAuthStateChange) {
-      return { data: { subscription: { unsubscribe: () => {} } } };
+    const customListener = (event) => {
+      callback(event.detail?.event, event.detail?.session);
+    };
+    window.addEventListener('auth-state-change', customListener);
+
+    let supabaseSub = null;
+    if (isSupabaseConfigured()) {
+      const { data } = supabase.auth.onAuthStateChange(callback);
+      supabaseSub = data?.subscription;
     }
-    return supabase.auth.onAuthStateChange(callback);
+
+    return {
+      data: {
+        subscription: {
+          unsubscribe: () => {
+            window.removeEventListener('auth-state-change', customListener);
+            supabaseSub?.unsubscribe?.();
+          }
+        }
+      }
+    };
   }
 };
 

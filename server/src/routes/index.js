@@ -10,7 +10,12 @@ import quizRoutes from './quiz.routes.js';
 import performanceRoutes from './performance.routes.js';
 import analyticsRoutes from './analytics.routes.js';
 
+import authRoutes from './auth.routes.js';
+
 const router = Router();
+
+// Authentication routes (Direct Supabase database auth & session token)
+router.use('/auth', authRoutes);
 
 // Healthcheck route
 router.use('/health', healthRoutes);

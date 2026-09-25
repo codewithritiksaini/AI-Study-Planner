@@ -1,10 +1,11 @@
 import { getSupabaseAdmin } from '../config/supabase.js';
 import { env } from '../config/env.js';
+import { verifySessionToken } from '../utils/token.js';
 
 /**
  * Authentication Middleware
- * Validates the Supabase JWT Bearer token passed in the Authorization header.
- * Derives user identity strictly from the verified Supabase token.
+ * Validates the session token or Supabase JWT Bearer token passed in the Authorization header.
+ * Derives user identity strictly from the verified token.
  */
 export const requireAuth = async (req, res, next) => {
   try {
@@ -34,12 +35,24 @@ export const requireAuth = async (req, res, next) => {
 
     let authenticatedUser = null;
 
+    // Approach 0: Check signed session token (direct database auth)
+    const verifiedSession = verifySessionToken(token);
+    if (verifiedSession) {
+      authenticatedUser = {
+        id: verifiedSession.id || verifiedSession.sub,
+        email: verifiedSession.email,
+        user_metadata: verifiedSession.user_metadata || {}
+      };
+    }
+
     // Approach 1: Check using getSupabaseAdmin client if configured with service role key
-    const supabaseAdmin = getSupabaseAdmin();
-    if (supabaseAdmin) {
-      const { data, error } = await supabaseAdmin.auth.getUser(token);
-      if (!error && data?.user) {
-        authenticatedUser = data.user;
+    if (!authenticatedUser) {
+      const supabaseAdmin = getSupabaseAdmin();
+      if (supabaseAdmin) {
+        const { data, error } = await supabaseAdmin.auth.getUser(token);
+        if (!error && data?.user) {
+          authenticatedUser = data.user;
+        }
       }
     }
 

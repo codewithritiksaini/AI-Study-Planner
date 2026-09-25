@@ -20,5 +20,14 @@ const shutdown = (signal) => {
   });
 };
 
+// Unhandled promise rejections and uncaught exceptions crash prevention
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('⚠️ [CRITICAL] Unhandled Rejection:', reason);
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('❌ [CRITICAL] Uncaught Exception:', err);
+});
+
 process.on('SIGTERM', () => shutdown('SIGTERM'));
 process.on('SIGINT', () => shutdown('SIGINT'));

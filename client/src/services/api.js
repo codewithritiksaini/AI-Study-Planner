@@ -14,12 +14,28 @@ const api = axios.create({
 api.interceptors.request.use(
   async (config) => {
     try {
-      if (supabase?.auth?.getSession) {
+      let token = null;
+
+      // 1. Try Supabase session if configured
+      const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      if (supabase?.auth?.getSession && anonKey && !anonKey.includes('placeholder')) {
         const { data } = await supabase.auth.getSession();
-        const token = data?.session?.access_token;
-        if (token) {
-          config.headers.Authorization = `Bearer ${token}`;
+        token = data?.session?.access_token;
+      }
+
+      // 2. Try stored session in localStorage (direct database auth)
+      if (!token && typeof window !== 'undefined') {
+        const stored = localStorage.getItem('auth_session');
+        if (stored) {
+          try {
+            const parsed = JSON.parse(stored);
+            token = parsed?.access_token;
+          } catch {}
         }
+      }
+
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
       }
     } catch {
       // Safe fallback if token retrieval encounters an issue
