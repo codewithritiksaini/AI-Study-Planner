@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Sparkles, X, Calendar, Clock, Sliders, ShieldCheck } from 'lucide-react';
 import Button from '../common/Button.jsx';
 
@@ -18,6 +18,17 @@ export const SmartOptimizationModal = ({
   const [preferredMinutes, setPreferredMinutes] = useState(45);
   const [maxDailyMinutes, setMaxDailyMinutes] = useState(180);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && !isLoading) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, isLoading, onClose]);
+
   if (!isOpen) return null;
 
   const handleSubmit = (e) => {
@@ -31,7 +42,12 @@ export const SmartOptimizationModal = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fade-in">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="smart-optimizer-title"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fade-in"
+    >
       <div className="relative w-full max-w-md rounded-2xl bg-white border border-slate-200 shadow-2xl overflow-hidden">
         {/* Header */}
         <div className="p-4 border-b border-slate-200 bg-slate-50/80 flex items-center justify-between">
@@ -40,7 +56,7 @@ export const SmartOptimizationModal = ({
               <Sparkles className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-slate-900">Smart Schedule Optimizer</h3>
+              <h3 id="smart-optimizer-title" className="text-sm font-bold text-slate-900">Smart Schedule Optimizer</h3>
               <p className="text-[11px] text-slate-500">Intelligent time-slot allocation</p>
             </div>
           </div>

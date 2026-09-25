@@ -38,7 +38,12 @@
     "test:sched:reschedule": "node src/scripts/test_scheduling_reschedule.js",
     "test:sched:fallback": "node src/scripts/test_scheduling_fallback.js",
     "test:sched:api": "node src/scripts/test_scheduling_api.js",
-    "test:sched": "npm run test:rls:phase11 && npm run test:sched:context && npm run test:sched:slots && npm run test:sched:engine && npm run test:sched:reschedule && npm run test:sched:fallback && npm run test:sched:api"
+    "test:sched": "npm run test:rls:phase11 && npm run test:sched:context && npm run test:sched:slots && npm run test:sched:engine && npm run test:sched:reschedule && npm run test:sched:fallback && npm run test:sched:api",
+    "test:prod:security": "node src/scripts/test_prod_security.js",
+    "test:db:opt": "node src/scripts/test_db_optimization.js",
+    "test:ai:safety": "node src/scripts/test_ai_safety.js",
+    "seed:demo": "node src/scripts/seed_demo_data.js",
+    "test:e2e:journey": "node src/scripts/test_e2e_journey.js"
   },
   "dependencies": {
     "@google/genai": "^2.24.0",
@@ -46,6 +51,7 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
+    "express-rate-limit": "^8.7.0",
     "helmet": "^8.0.0",
     "pg": "^8.23.0",
     "zod": "^3.24.2"

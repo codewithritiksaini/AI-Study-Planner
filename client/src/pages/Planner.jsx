@@ -18,6 +18,8 @@ import PageHeader from '../components/common/PageHeader.jsx';
 import Badge from '../components/common/Badge.jsx';
 import Button from '../components/common/Button.jsx';
 import LoadingSpinner from '../components/common/LoadingSpinner.jsx';
+import SkeletonLoader from '../components/common/SkeletonLoader.jsx';
+import { useToast } from '../hooks/useToast.js';
 
 import DailyPlanner from '../components/planner/DailyPlanner.jsx';
 import WeeklyPlanner from '../components/planner/WeeklyPlanner.jsx';
@@ -29,6 +31,7 @@ import ManualSessionModal from '../components/planner/ManualSessionModal.jsx';
 
 export const Planner = () => {
   const navigate = useNavigate();
+  const toast = useToast();
   const todayStr = new Date().toISOString().split('T')[0];
 
   // Active view tab: 'daily' | 'weekly' | 'availability'
@@ -243,14 +246,18 @@ export const Planner = () => {
       const res = await plannerService.applyPlan(applyParams);
       setPreviewModalOpen(false);
       setPreviewData(null);
-      setSuccessNotice(`Schedule applied successfully! ${res?.sessions_created || 0} study session(s) written to your active calendar.`);
+      const msg = `Schedule applied successfully! ${res?.sessions_created || 0} study session(s) written to your active calendar.`;
+      setSuccessNotice(msg);
+      toast.success(msg, 'Timetable Applied');
       await loadDailyData(selectedDate);
       if (activeTab === 'weekly') {
         await loadWeeklyData(weekStartDate);
       }
     } catch (err) {
       console.error('Failed to apply plan:', err);
-      setErrorMessage(err.response?.data?.error?.message || 'Failed to apply study schedule.');
+      const errMsg = err.response?.data?.error?.message || 'Failed to apply study schedule.';
+      setErrorMessage(errMsg);
+      toast.error(errMsg, 'Optimization Error');
     } finally {
       setIsApplyingPlan(false);
     }
@@ -262,6 +269,7 @@ export const Planner = () => {
   const handleCreateManualSession = async (sessionData) => {
     await plannerService.createManualSession(sessionData);
     setSuccessNotice('Custom study session scheduled.');
+    toast.success('Custom study session added to your schedule.', 'Session Created');
     await loadDailyData(selectedDate);
   };
 
@@ -272,29 +280,34 @@ export const Planner = () => {
     await plannerService.createAvailability(payload);
     await loadAvailabilityAndBlocks();
     setSuccessNotice('Study window saved.');
+    toast.success('Weekly recurring study window saved.', 'Window Added');
   };
 
   const handleUpdateAvailability = async (id, payload) => {
     await plannerService.updateAvailability(id, payload);
     await loadAvailabilityAndBlocks();
+    toast.success('Study window updated successfully.');
   };
 
   const handleDeleteAvailability = async (id) => {
     await plannerService.deleteAvailability(id);
     await loadAvailabilityAndBlocks();
     setSuccessNotice('Study window deleted.');
+    toast.info('Study window removed.', 'Deleted');
   };
 
   const handleAddBlockedPeriod = async (payload) => {
     await plannerService.createBlockedPeriod(payload);
     await loadAvailabilityAndBlocks();
     setSuccessNotice('Blocked commitment saved.');
+    toast.success('Blackout commitment saved. Scheduler will route around this block.', 'Blackout Saved');
   };
 
   const handleDeleteBlockedPeriod = async (id) => {
     await plannerService.deleteBlockedPeriod(id);
     await loadAvailabilityAndBlocks();
     setSuccessNotice('Blocked commitment removed.');
+    toast.info('Blocked commitment removed.', 'Deleted');
   };
 
   return (
@@ -401,10 +414,7 @@ export const Planner = () => {
 
       {/* Main Tab Content */}
       {loading ? (
-        <div className="py-24 flex flex-col items-center justify-center">
-          <LoadingSpinner size="lg" />
-          <p className="text-xs text-slate-500 font-medium mt-3">Loading scheduler workspace...</p>
-        </div>
+        <SkeletonLoader type="timetable" />
       ) : activeTab === 'daily' ? (
         <DailyPlanner
           dailyData={dailyData}

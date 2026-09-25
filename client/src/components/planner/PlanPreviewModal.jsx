@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Sparkles,
   Calendar,
@@ -25,6 +25,17 @@ export const PlanPreviewModal = ({
   isApplying = false
 }) => {
   const [preserveLocked, setPreserveLocked] = useState(true);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && !isApplying) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, isApplying, onClose]);
 
   if (!isOpen || !previewData) return null;
 
@@ -58,7 +69,12 @@ export const PlanPreviewModal = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fade-in">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="plan-preview-modal-title"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fade-in"
+    >
       <div className="relative w-full max-w-3xl max-h-[90vh] flex flex-col rounded-2xl bg-white border border-slate-200 shadow-2xl overflow-hidden">
         {/* Modal Header */}
         <div className="p-5 border-b border-slate-200 bg-slate-50/80 flex items-center justify-between">

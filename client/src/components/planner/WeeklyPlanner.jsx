@@ -126,8 +126,17 @@ export const WeeklyPlanner = ({
           return (
             <div
               key={day.date}
+              role="button"
+              tabIndex={0}
+              aria-label={`View schedule for ${dayName} ${dayNumber}`}
               onClick={() => onSelectDay && onSelectDay(day.date)}
-              className={`rounded-xl border p-3 flex flex-col justify-between cursor-pointer transition-all hover:border-indigo-300 hover:shadow-sm ${
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  onSelectDay && onSelectDay(day.date);
+                }
+              }}
+              className={`rounded-xl border p-3 flex flex-col justify-between cursor-pointer transition-all hover:border-indigo-300 hover:shadow-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500 ${
                 isToday
                   ? 'bg-indigo-50/30 border-indigo-200 ring-1 ring-indigo-200'
                   : 'bg-white border-slate-200'

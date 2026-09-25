@@ -32,6 +32,8 @@ import Card, { CardHeader, CardTitle, CardContent } from '../components/common/C
 import Badge from '../components/common/Badge.jsx';
 import Button from '../components/common/Button.jsx';
 import LoadingSpinner from '../components/common/LoadingSpinner.jsx';
+import SkeletonLoader from '../components/common/SkeletonLoader.jsx';
+import EmptyState from '../components/common/EmptyState.jsx';
 import WeakTopicsCard from '../components/quiz/WeakTopicsCard.jsx';
 import RecommendedNext from '../components/recommendations/RecommendedNext.jsx';
 
@@ -362,20 +364,7 @@ export const Dashboard = () => {
         {/* Left Column (2 Cols): Curriculum Overview & Scheduled Tasks */}
         <div className="lg:col-span-2 space-y-4">
           {summary.totalSubjects === 0 && !loadingSummary ? (
-            <Card className="border-dashed border-2 border-slate-300 bg-slate-50/50">
-              <CardContent className="p-8 text-center flex flex-col items-center justify-center">
-                <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-3">
-                  <BookOpen className="w-6 h-6" />
-                </div>
-                <h3 className="text-base font-bold text-slate-900">Set Up Your Academic Curriculum</h3>
-                <p className="text-sm text-slate-500 max-w-md mt-1 mb-5">
-                  Add your B.Tech subjects, define syllabus topics, set exam deadlines and target scores to start tracking academic progress.
-                </p>
-                <Button icon={Plus} onClick={() => navigate('/subjects')}>
-                  Add First Subject
-                </Button>
-              </CardContent>
-            </Card>
+            <EmptyState preset="subjects" />
           ) : (
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-3">

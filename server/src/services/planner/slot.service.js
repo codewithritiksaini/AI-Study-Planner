@@ -16,6 +16,18 @@ import { schedulerConfig } from '../../config/scheduler.config.js';
  */
 export function timeStringToMinutes(timeStr) {
   if (!timeStr) return 0;
+  if (timeStr instanceof Date) {
+    return timeStr.getUTCHours() * 60 + timeStr.getUTCMinutes();
+  }
+  if (typeof timeStr !== 'string') {
+    timeStr = String(timeStr);
+  }
+  if (timeStr.includes('T')) {
+    const d = new Date(timeStr);
+    if (!isNaN(d.getTime())) {
+      return d.getUTCHours() * 60 + d.getUTCMinutes();
+    }
+  }
   const parts = timeStr.split(':');
   const hours = parseInt(parts[0], 10) || 0;
   const minutes = parseInt(parts[1], 10) || 0;

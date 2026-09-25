@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext.jsx';
+import { ToastProvider } from './context/ToastContext.jsx';
 import ProtectedRoute from './components/common/ProtectedRoute.jsx';
 import AppLayout from './layouts/AppLayout.jsx';
 import LandingPage from './pages/LandingPage.jsx';
@@ -19,13 +20,15 @@ import AIAssistant from './pages/AIAssistant.jsx';
 import AITutor from './pages/AITutor.jsx';
 import Profile from './pages/Profile.jsx';
 import Settings from './pages/Settings.jsx';
+import InterviewDemo from './pages/InterviewDemo.jsx';
 import NotFound from './pages/NotFound.jsx';
 
 export function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <Routes>
+        <ToastProvider>
+          <Routes>
           {/* Public Routes */}
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<Login />} />
@@ -52,13 +55,15 @@ export function App() {
             <Route path="/ai-tutor" element={<AITutor />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/interview-demo" element={<InterviewDemo />} />
           </Route>
 
           {/* 404 Catch-All Page */}
           <Route path="*" element={<NotFound />} />
         </Routes>
-      </AuthProvider>
-    </BrowserRouter>
+      </ToastProvider>
+    </AuthProvider>
+  </BrowserRouter>
   );
 }
 

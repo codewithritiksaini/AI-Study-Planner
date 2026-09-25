@@ -25,9 +25,9 @@ export const getDbPool = () => {
       ssl: {
         rejectUnauthorized: false
       },
-      max: 20,
-      idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 20000
+      max: 10,
+      idleTimeoutMillis: 10000,
+      connectionTimeoutMillis: 30000
     });
 
     poolInstance.on('error', (err) => {

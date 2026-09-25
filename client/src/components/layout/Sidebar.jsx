@@ -27,6 +27,7 @@ export const navigationItems = [
   { label: 'Progress', path: '/progress', icon: CheckCircle2 },
   { label: 'Analytics', path: '/analytics', icon: BarChart3 },
   { label: 'Smart Actions', path: '/recommendations', icon: Target, badge: 'Phase 10' },
+  { label: 'Interview Demo', path: '/interview-demo', icon: Sparkles, badge: 'Phase 12' },
   { label: 'Profile', path: '/profile', icon: User },
   { label: 'Settings', path: '/settings', icon: Settings }
 ];
@@ -91,12 +92,12 @@ export const Sidebar = ({ onClose }) => {
       <div className="p-4 border-t border-slate-200 bg-slate-50/80">
         <div className="flex items-center justify-between mb-1.5">
           <span className="text-[11px] font-semibold text-slate-600">CSE Capstone</span>
-          <Badge variant="primary" size="sm" className="bg-indigo-50 text-indigo-700 border-indigo-200 text-[10px]">
-            Phase 2
+          <Badge variant="primary" size="sm" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px]">
+            Phase 12
           </Badge>
         </div>
         <p className="text-[11px] text-slate-400 leading-tight">
-          Adaptive Engine & Gemini AI integration in later phases.
+          Production Ready • Phase 0–12 Architecture Verified.
         </p>
       </div>
     </aside>
