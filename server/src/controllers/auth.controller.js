@@ -49,17 +49,27 @@ export const login = async (req, res) => {
     );
     const profile = profileResult.rows[0] || null;
 
+    const userRole = profile?.role || 'student';
+
     // Generate signed session token
     const token = createSessionToken({
       id: user.id,
       email: user.email,
-      user_metadata: user.raw_user_meta_data || {}
+      role: userRole,
+      user_metadata: {
+        ...(user.raw_user_meta_data || {}),
+        role: userRole
+      }
     });
 
     const userPayload = {
       id: user.id,
       email: user.email,
-      user_metadata: user.raw_user_meta_data || {},
+      role: userRole,
+      user_metadata: {
+        ...(user.raw_user_meta_data || {}),
+        role: userRole
+      },
       profile
     };
 
@@ -219,17 +229,26 @@ export const register = async (req, res) => {
     );
 
     const profile = profileInsert.rows[0];
+    const userRole = profile?.role || 'student';
 
     const token = createSessionToken({
       id: newUser.id,
       email: newUser.email,
-      user_metadata: newUser.raw_user_meta_data || {}
+      role: userRole,
+      user_metadata: {
+        ...(newUser.raw_user_meta_data || {}),
+        role: userRole
+      }
     });
 
     const userPayload = {
       id: newUser.id,
       email: newUser.email,
-      user_metadata: newUser.raw_user_meta_data || {},
+      role: userRole,
+      user_metadata: {
+        ...(newUser.raw_user_meta_data || {}),
+        role: userRole
+      },
       profile
     };
 
@@ -269,13 +288,20 @@ export const getMe = async (req, res) => {
       [userId]
     );
 
+    const profile = profileResult.rows[0] || null;
+    const userRole = profile?.role || req.user.role || 'student';
+
     return res.status(200).json({
       success: true,
       user: {
         id: req.user.id,
         email: req.user.email,
-        user_metadata: req.user.user_metadata || {},
-        profile: profileResult.rows[0] || null
+        role: userRole,
+        user_metadata: {
+          ...(req.user.user_metadata || {}),
+          role: userRole
+        },
+        profile
       }
     });
   } catch (error) {

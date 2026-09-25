@@ -109,10 +109,15 @@ export const AuthProvider = ({ children }) => {
     setProfile(updatedProfile);
   };
 
+  const role = profile?.role || user?.role || user?.user_metadata?.role || 'student';
+  const isAdmin = role === 'admin';
+
   const value = {
     user,
     session,
     profile,
+    role,
+    isAdmin,
     loading,
     isAuthenticated: Boolean(user),
     signIn,

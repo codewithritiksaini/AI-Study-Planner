@@ -15,11 +15,17 @@ export function createSessionToken(user) {
     typ: 'JWT'
   };
 
+  const appRole = user.app_role || user.role || user.user_metadata?.role || 'student';
+
   const payload = {
     sub: user.id,
     id: user.id,
     email: user.email,
-    user_metadata: user.user_metadata || {},
+    app_role: appRole,
+    user_metadata: {
+      ...(user.user_metadata || {}),
+      role: appRole
+    },
     aud: 'authenticated',
     role: 'authenticated',
     iat: Math.floor(Date.now() / 1000),

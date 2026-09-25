@@ -121,7 +121,7 @@ export const RecommendedNext = ({ limit = 3 }) => {
               <div className="flex items-center gap-2">
                 <h3 className="text-base font-bold text-slate-900">Recommended Next Actions</h3>
                 <Badge variant="purple" size="sm" className="text-[10px] font-bold">
-                  Phase 10 Engine
+                  Adaptive Priority
                 </Badge>
               </div>
               <p className="text-xs text-slate-500 mt-0.5">

@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext.jsx';
 import { ToastProvider } from './context/ToastContext.jsx';
 import ProtectedRoute from './components/common/ProtectedRoute.jsx';
+import AdminRoute from './components/common/AdminRoute.jsx';
 import AppLayout from './layouts/AppLayout.jsx';
 import LandingPage from './pages/LandingPage.jsx';
 import Login from './pages/Login.jsx';
@@ -55,7 +56,24 @@ export function App() {
             <Route path="/ai-tutor" element={<AITutor />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/settings" element={<Settings />} />
-            <Route path="/interview-demo" element={<InterviewDemo />} />
+
+            {/* Platform Administration Console (Strictly Protected for Admins) */}
+            <Route
+              path="/admin"
+              element={
+                <AdminRoute>
+                  <InterviewDemo />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/interview-demo"
+              element={
+                <AdminRoute>
+                  <InterviewDemo />
+                </AdminRoute>
+              }
+            />
           </Route>
 
           {/* 404 Catch-All Page */}

@@ -41,6 +41,7 @@ export const requireAuth = async (req, res, next) => {
       authenticatedUser = {
         id: verifiedSession.id || verifiedSession.sub,
         email: verifiedSession.email,
+        role: verifiedSession.app_role || verifiedSession.user_metadata?.role || 'student',
         user_metadata: verifiedSession.user_metadata || {}
       };
     }

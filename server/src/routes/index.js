@@ -49,4 +49,8 @@ router.use('/analytics', analyticsRoutes);
 import recommendationRoutes from './recommendation.routes.js';
 router.use('/recommendations', recommendationRoutes);
 
+// Platform Administration & Engine Diagnostics Console (Admin RBAC)
+import adminRoutes from './admin.routes.js';
+router.use('/admin', adminRoutes);
+
 export default router;

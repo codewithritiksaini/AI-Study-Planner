@@ -13,9 +13,11 @@ import {
   Settings,
   X,
   GraduationCap,
-  Target
+  Target,
+  ShieldCheck
 } from 'lucide-react';
 import Badge from '../common/Badge.jsx';
+import { useAuth } from '../../context/AuthContext.jsx';
 
 export const navigationItems = [
   { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
@@ -27,12 +29,12 @@ export const navigationItems = [
   { label: 'Progress', path: '/progress', icon: CheckCircle2 },
   { label: 'Analytics', path: '/analytics', icon: BarChart3 },
   { label: 'Smart Actions', path: '/recommendations', icon: Target, badge: 'Smart Recs' },
-  { label: 'Interview Demo', path: '/interview-demo', icon: Sparkles, badge: 'Live Demo' },
   { label: 'Profile', path: '/profile', icon: User },
   { label: 'Settings', path: '/settings', icon: Settings }
 ];
 
 export const Sidebar = ({ onClose }) => {
+  const { isAdmin } = useAuth();
   return (
     <aside className="flex flex-col h-full bg-white text-slate-700 w-64 border-r border-slate-200 select-none">
       {/* Brand Header */}
@@ -86,6 +88,34 @@ export const Sidebar = ({ onClose }) => {
             </NavLink>
           );
         })}
+
+        {/* Platform Administration section — strictly visible to Admins only */}
+        {isAdmin && (
+          <div className="pt-3 mt-3 border-t border-slate-200">
+            <p className="px-3 text-[10px] font-bold uppercase tracking-wider text-amber-600 mb-2">
+              Platform Administration
+            </p>
+            <NavLink
+              to="/admin"
+              onClick={onClose}
+              className={({ isActive }) =>
+                `flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                  isActive
+                    ? 'bg-amber-50 text-amber-900 font-semibold border border-amber-200 shadow-xs'
+                    : 'text-slate-700 hover:bg-amber-50/60 hover:text-amber-900'
+                }`
+              }
+            >
+              <div className="flex items-center gap-3">
+                <ShieldCheck className="w-4 h-4 text-amber-600 shrink-0" />
+                <span>Admin Console</span>
+              </div>
+              <Badge variant="warning" size="sm" className="bg-amber-100 text-amber-800 border-amber-200 font-bold text-[9px]">
+                Admin
+              </Badge>
+            </NavLink>
+          </div>
+        )}
       </nav>
 
       {/* Footer Info / Project Status */}
