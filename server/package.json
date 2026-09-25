@@ -10,7 +10,8 @@
     "migrate": "node src/scripts/migrate.js",
     "test:rls": "node src/scripts/test_rls.js",
     "test:rls:phase3": "node src/scripts/test_rls_phase3.js",
-    "test:rls:phase4": "node src/scripts/test_rls_phase4.js"
+    "test:rls:phase4": "node src/scripts/test_rls_phase4.js",
+    "test:planner": "node src/scripts/test_planner.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.1",

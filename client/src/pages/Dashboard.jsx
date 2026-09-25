@@ -20,6 +20,7 @@ import {
 import { useAuth } from '../context/AuthContext.jsx';
 import { subjectService } from '../services/subjects.js';
 import { studyService } from '../services/study.js';
+import { plannerService } from '../services/planner.js';
 import PageHeader from '../components/common/PageHeader.jsx';
 import Card, { CardHeader, CardTitle, CardContent } from '../components/common/Card.jsx';
 import Badge from '../components/common/Badge.jsx';
@@ -46,22 +47,33 @@ export const Dashboard = () => {
     sessions: []
   });
 
+  // Phase 5 Study Plan metrics
+  const [todayPlan, setTodayPlan] = useState({
+    total_planned_minutes: 0,
+    completed_minutes: 0,
+    pending_minutes: 0,
+    available_minutes: 180,
+    plans: []
+  });
+
   useEffect(() => {
     let isMounted = true;
 
     const loadDashboardData = async () => {
       try {
         setLoadingSummary(true);
-        const [academicSummary, activeSess, todayData] = await Promise.all([
+        const [academicSummary, activeSess, todayData, planData] = await Promise.all([
           subjectService.getDashboardSummary(),
           studyService.getActiveSession().catch(() => null),
-          studyService.getTodaySessions().catch(() => ({ total_minutes: 0, session_count: 0, sessions: [] }))
+          studyService.getTodaySessions().catch(() => ({ total_minutes: 0, session_count: 0, sessions: [] })),
+          plannerService.getTodayPlan().catch(() => ({ total_planned_minutes: 0, completed_minutes: 0, pending_minutes: 0, plans: [] }))
         ]);
 
         if (isMounted) {
           if (academicSummary) setSummary(academicSummary);
           if (activeSess) setActiveSession(activeSess);
           if (todayData) setTodayStudy(todayData);
+          if (planData) setTodayPlan(planData);
         }
       } catch (err) {
         console.error('Failed to load dashboard data:', err);
@@ -336,13 +348,86 @@ export const Dashboard = () => {
                     />
                   </div>
                 </div>
-
-                <p className="text-[11px] text-center text-slate-400 pt-2">
-                  * Daily timetable generation and adaptive study slots activate in Phase 5.
-                </p>
               </CardContent>
             </Card>
           )}
+
+          {/* Today's Study Plan Tasks (Phase 5 Live Timetable) */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-3">
+              <div className="flex items-center gap-2">
+                <Calendar className="w-5 h-5 text-indigo-600" />
+                <div>
+                  <CardTitle>Today's Planned Study Tasks</CardTitle>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    {todayPlan.plans && todayPlan.plans.length > 0
+                      ? `${todayPlan.plans.length} task(s) scheduled (${Math.round(todayPlan.total_planned_minutes / 60 * 10) / 10}h planned)`
+                      : 'No study plan generated yet for today'}
+                  </p>
+                </div>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => navigate('/planner')}>
+                Open Planner
+              </Button>
+            </CardHeader>
+            <CardContent className="p-4 space-y-3">
+              {todayPlan.plans && todayPlan.plans.length > 0 ? (
+                todayPlan.plans.slice(0, 3).map((plan) => (
+                  <div
+                    key={plan.id}
+                    className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-slate-300 transition-all"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div
+                        className="w-2.5 h-9 rounded-full shrink-0"
+                        style={{ backgroundColor: plan.subjects?.color || '#4f46e5' }}
+                      />
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold uppercase text-slate-500 truncate">
+                            {plan.subjects?.name}
+                          </span>
+                          <Badge variant={plan.status === 'COMPLETED' ? 'success' : plan.status === 'IN_PROGRESS' ? 'primary' : 'neutral'} size="sm">
+                            {plan.status}
+                          </Badge>
+                        </div>
+                        <h5 className="text-sm font-semibold text-slate-900 truncate">
+                          {plan.topics?.name}
+                        </h5>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                      <span className="text-xs text-slate-500 font-medium">
+                        {plan.planned_minutes}m
+                      </span>
+                      {plan.status !== 'COMPLETED' && (
+                        <Button
+                          size="sm"
+                          variant="primary"
+                          onClick={() => navigate(`/study?subjectId=${plan.subject_id}&topicId=${plan.topic_id}`)}
+                        >
+                          Start
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="py-6 text-center text-xs text-slate-500">
+                  <p>No study tasks scheduled for today.</p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-3"
+                    onClick={() => navigate('/planner')}
+                  >
+                    Generate Study Plan
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
 
         {/* Right Column: AI Advice Card & Weak Topics */}

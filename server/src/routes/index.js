@@ -4,6 +4,7 @@ import profileRoutes from './profile.routes.js';
 import subjectRoutes from './subject.routes.js';
 import topicRoutes from './topic.routes.js';
 import studyRoutes from './study.routes.js';
+import plannerRoutes from './planner.routes.js';
 
 const router = Router();
 
@@ -19,7 +20,10 @@ router.use('/topics', topicRoutes);
 
 // Study Session & Activity Tracking routes (Phase 4)
 router.use('/study', studyRoutes);
-// router.use('/planner', plannerRoutes);   // Phase 5
+
+// Rule-Based Study Planner routes (Phase 5)
+router.use('/planner', plannerRoutes);
+
 // router.use('/quizzes', quizRoutes);     // Phase 7
 // router.use('/analytics', analyticsRoutes);// Phase 9
 // router.use('/ai', aiRoutes);            // Phase 10
