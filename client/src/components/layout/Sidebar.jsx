@@ -14,7 +14,8 @@ import {
   X,
   GraduationCap,
   Target,
-  ShieldCheck
+  ShieldCheck,
+  Users
 } from 'lucide-react';
 import Badge from '../common/Badge.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
@@ -91,15 +92,16 @@ export const Sidebar = ({ onClose }) => {
 
         {/* Platform Administration section — strictly visible to Admins only */}
         {isAdmin && (
-          <div className="pt-3 mt-3 border-t border-slate-200">
+          <div className="pt-3 mt-3 border-t border-slate-200 space-y-1">
             <p className="px-3 text-[10px] font-bold uppercase tracking-wider text-amber-600 mb-2">
               Platform Administration
             </p>
             <NavLink
               to="/admin"
+              end
               onClick={onClose}
               className={({ isActive }) =>
-                `flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                `flex items-center justify-between px-3 py-2 rounded-xl text-sm font-medium transition-all ${
                   isActive
                     ? 'bg-amber-50 text-amber-900 font-semibold border border-amber-200 shadow-xs'
                     : 'text-slate-700 hover:bg-amber-50/60 hover:text-amber-900'
@@ -111,7 +113,27 @@ export const Sidebar = ({ onClose }) => {
                 <span>Admin Console</span>
               </div>
               <Badge variant="warning" size="sm" className="bg-amber-100 text-amber-800 border-amber-200 font-bold text-[9px]">
-                Admin
+                Diagnostics
+              </Badge>
+            </NavLink>
+
+            <NavLink
+              to="/admin/students"
+              onClick={onClose}
+              className={({ isActive }) =>
+                `flex items-center justify-between px-3 py-2 rounded-xl text-sm font-medium transition-all ${
+                  isActive
+                    ? 'bg-indigo-50 text-indigo-900 font-semibold border border-indigo-200 shadow-xs'
+                    : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
+                }`
+              }
+            >
+              <div className="flex items-center gap-3">
+                <Users className="w-4 h-4 text-indigo-600 shrink-0" />
+                <span>Student Directory</span>
+              </div>
+              <Badge variant="primary" size="sm" className="bg-indigo-100 text-indigo-700 border-indigo-200 font-bold text-[9px]">
+                Users
               </Badge>
             </NavLink>
           </div>

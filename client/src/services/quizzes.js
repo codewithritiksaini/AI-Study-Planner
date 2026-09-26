@@ -35,7 +35,16 @@ export const quizService = {
    */
   async startAttempt(quizId) {
     const response = await api.post(`/quizzes/${quizId}/start`);
-    return response?.data?.attempt || response?.data || response || null;
+    const data = response?.data?.attempt || response?.data || response || null;
+    if (data && typeof data === 'object') {
+      const resolvedId = data.id || data.attempt_id;
+      return {
+        ...data,
+        id: resolvedId,
+        attempt_id: resolvedId
+      };
+    }
+    return data;
   },
 
   /**

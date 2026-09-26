@@ -24,6 +24,7 @@ import AITutor from './pages/AITutor.jsx';
 import Profile from './pages/Profile.jsx';
 import Settings from './pages/Settings.jsx';
 import InterviewDemo from './pages/InterviewDemo.jsx';
+import AdminStudents from './pages/AdminStudents.jsx';
 import NotFound from './pages/NotFound.jsx';
 
 export function App() {
@@ -68,6 +69,14 @@ export function App() {
               element={
                 <AdminRoute>
                   <InterviewDemo />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/students"
+              element={
+                <AdminRoute>
+                  <AdminStudents />
                 </AdminRoute>
               }
             />

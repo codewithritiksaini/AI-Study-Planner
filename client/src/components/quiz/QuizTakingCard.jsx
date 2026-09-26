@@ -223,11 +223,12 @@ export const QuizTakingCard = ({
                 type="button"
                 variant="primary"
                 icon={FileText}
+                isLoading={submitting}
                 onClick={handleInitialSubmitClick}
                 disabled={submitting}
                 className="bg-emerald-600 hover:bg-emerald-700 text-white border-transparent font-bold shadow-xs px-5"
               >
-                {submitting ? 'Generating Your Report...' : 'View Result & Report'}
+                {submitting ? 'Generating Report...' : 'View Result & Report'}
               </Button>
             )}
           </div>
@@ -257,6 +258,7 @@ export const QuizTakingCard = ({
                 type="button"
                 variant="outline"
                 onClick={() => setShowWarningModal(false)}
+                disabled={submitting}
               >
                 Review Questions
               </Button>
@@ -264,9 +266,11 @@ export const QuizTakingCard = ({
                 type="button"
                 variant="primary"
                 onClick={performSubmission}
+                disabled={submitting}
+                isLoading={submitting}
                 className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
               >
-                Proceed & View Report
+                {submitting ? 'Generating Report...' : 'Proceed & View Report'}
               </Button>
             </div>
           </div>

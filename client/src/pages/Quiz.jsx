@@ -73,7 +73,8 @@ export const Quiz = () => {
   const handleQuizGenerated = (quiz, attempt) => {
     setGeneratingMetadata(null);
     setActiveQuiz(quiz);
-    setActiveAttemptId(attempt?.id);
+    const attemptId = attempt?.id || attempt?.attempt_id;
+    setActiveAttemptId(attemptId);
     setActiveResult(null);
     setGlobalError(null);
     setCurrentMode('TAKING');
@@ -81,15 +82,26 @@ export const Quiz = () => {
 
   // Submits the attempt to the deterministic backend evaluation engine
   const handleSubmitAttempt = async (answers) => {
-    if (!activeQuiz?.id || !activeAttemptId) return;
+    let attemptId = activeAttemptId;
+    if (!activeQuiz?.id) {
+      setGlobalError('Quiz session not found. Please try generating a quiz.');
+      return;
+    }
 
     setSubmittingAttempt(true);
     setGlobalError(null);
 
     try {
+      if (!attemptId) {
+        console.warn('activeAttemptId was missing during submit; starting a fresh attempt session...');
+        const newAttempt = await quizService.startAttempt(activeQuiz.id);
+        attemptId = newAttempt?.id || newAttempt?.attempt_id;
+        setActiveAttemptId(attemptId);
+      }
+
       const resultData = await quizService.submitAttempt(
         activeQuiz.id,
-        activeAttemptId,
+        attemptId,
         answers
       );
       setActiveResult(resultData);
@@ -97,7 +109,8 @@ export const Quiz = () => {
       setHistoryRefreshKey(prev => prev + 1);
     } catch (err) {
       console.error('Failed to submit quiz attempt:', err);
-      setGlobalError(err.response?.data?.message || 'Failed to submit quiz. Please try again.');
+      const msg = err.message || err.response?.data?.message || 'Failed to submit quiz. Please try again.';
+      setGlobalError(msg);
     } finally {
       setSubmittingAttempt(false);
     }
@@ -112,7 +125,8 @@ export const Quiz = () => {
 
     try {
       const newAttempt = await quizService.startAttempt(activeQuiz.id);
-      setActiveAttemptId(newAttempt.id);
+      const attemptId = newAttempt?.id || newAttempt?.attempt_id;
+      setActiveAttemptId(attemptId);
       setActiveResult(null);
       setCurrentMode('TAKING');
     } catch (err) {

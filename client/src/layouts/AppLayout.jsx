@@ -9,7 +9,12 @@ export const AppLayout = () => {
 
   // Find active page title from route
   const currentNav = navigationItems.find((item) => item.path === location.pathname);
-  const pageTitle = currentNav?.label || 'AI Study Planner';
+  let pageTitle = currentNav?.label;
+  if (!pageTitle) {
+    if (location.pathname === '/admin') pageTitle = 'Admin Console & Diagnostics';
+    else if (location.pathname === '/admin/students') pageTitle = 'Student & User Directory';
+    else pageTitle = 'AI Study Planner';
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 flex">
